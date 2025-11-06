@@ -1,11 +1,18 @@
+"use client";
 import Footer from "@/components/Footers";
 import Header from "@/components/Headers";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+const queryClient = new QueryClient();
 
 const PageLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex min-h-screen justify-between flex-col pt-1">
-      <Header />
-      <main>{children}</main>
+      <div>
+        <Header />
+        <QueryClientProvider client={queryClient}>
+          <main className="px-4">{children}</main>
+        </QueryClientProvider>
+      </div>
       <Footer />
     </div>
   );

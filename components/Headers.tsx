@@ -1,6 +1,11 @@
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu";
 import Image from "next/image";
 import Link from "next/link";
-// import { Navigation } from "./Navigation";
 
 const Header = () => {
   return (
@@ -20,7 +25,15 @@ const Header = () => {
           </Link>
         </div>
         {/* <Navigation /> */}
-        <div></div>
+        <NavigationMenu>
+          <NavigationMenuList>
+            <NavigationMenuItem className="flex gap-4">
+              <NavigationMenuLink asChild>
+                <Link href="/docs">Users</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
       </div>
     </header>
   );
