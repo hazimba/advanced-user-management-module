@@ -1,4 +1,5 @@
 "use client";
+import { Toaster } from "@/components/ui/sonner";
 import Footer from "@/components/Footers";
 import Header from "@/components/Headers";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -9,6 +10,8 @@ const PageLayout = ({ children }: { children: React.ReactNode }) => {
     <div className="flex min-h-screen justify-between flex-col pt-1">
       <div>
         <Header />
+        <Toaster position="top-center" />
+
         <QueryClientProvider client={queryClient}>
           <main className="px-4">{children}</main>
         </QueryClientProvider>
