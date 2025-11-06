@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import Image from "next/image";
 import Link from "next/link";
+import ModeToggle from "./mode-toggle";
 
 const Header = () => {
   return (
@@ -30,6 +31,9 @@ const Header = () => {
             <NavigationMenuItem className="flex gap-4">
               <NavigationMenuLink asChild>
                 <Link href="/docs">Users</Link>
+              </NavigationMenuLink>
+              <NavigationMenuLink asChild>
+                <ModeToggle toggle />
               </NavigationMenuLink>
             </NavigationMenuItem>
           </NavigationMenuList>

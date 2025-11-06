@@ -1,7 +1,6 @@
 "use client";
 import { User } from "@/app/types";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 
 import {
   Dialog,
@@ -47,9 +46,9 @@ import {
   Trash2Icon,
   User as UserIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 
 const UsersPage = () => {
   const [page, setPage] = useState(1);
