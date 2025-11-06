@@ -1,7 +1,7 @@
 "use client";
 import { User } from "@/app/types";
 import { Button } from "@/components/ui/button";
-
+import { toast } from "sonner";
 import {
   Dialog,
   DialogClose,
@@ -27,7 +27,11 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
-import { Popover, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -39,6 +43,7 @@ import {
 import { useFetchData } from "@/lib/queries/shared";
 import {
   Briefcase,
+  DeleteIcon,
   Edit2Icon,
   Mail,
   Phone,
@@ -49,6 +54,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const UsersPage = () => {
   const [page, setPage] = useState(1);
@@ -57,12 +63,21 @@ const UsersPage = () => {
   const [isDeleting, setIsDeleting] = useState<boolean>();
   const [searchInput, setSearchInput] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
+  const [checkboxClicked, setCheckboxClicked] = useState<string[]>([]);
   const { isPending, error, data } = useFetchData(
     "users",
     page,
     15,
     debouncedSearch
   );
+
+  console.log("checkboxClicked", checkboxClicked);
+
+  const handleCheckboxClick = (userId: string, checked: boolean) => {
+    setCheckboxClicked((prev) =>
+      checked ? [...prev, userId] : prev.filter((id) => id !== userId)
+    );
+  };
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -71,15 +86,12 @@ const UsersPage = () => {
     return () => clearTimeout(handler);
   }, [searchInput]);
 
-  console.log("debouncedSearch", debouncedSearch);
-
   // if (isPending) return <p>Loading...</p>;
   if (error) return <p>Error loading data</p>;
 
   // if (!data) {
   //   return <>No data available</>;
   // }
-  console.log("data", data);
   return (
     <div className="p-4">
       <div className="flex items-center justify-between">
@@ -92,9 +104,21 @@ const UsersPage = () => {
           <NavigationMenuList>
             <NavigationMenuItem className="flex gap-4">
               <NavigationMenuLink asChild>
-                <Link href="/docs" className="flex flex-row items-center">
-                  <Button>Add New User</Button>
-                </Link>
+                {/* <Link className="flex flex-row items-center"> */}
+                <Button
+                  onClick={() =>
+                    toast("Clicked", {
+                      description: "Mantap",
+                      action: {
+                        label: "Undo",
+                        onClick: () => console.log("Undo"),
+                      },
+                    })
+                  }
+                >
+                  Add New User
+                </Button>
+                {/* </Link> */}
               </NavigationMenuLink>
             </NavigationMenuItem>
           </NavigationMenuList>
@@ -103,6 +127,32 @@ const UsersPage = () => {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>
+              <Popover>
+                <PopoverTrigger>
+                  {checkboxClicked.length > 0 && (
+                    <Trash2Icon className="cursor-pointer size-4" />
+                  )}
+                </PopoverTrigger>
+                <PopoverContent
+                  side="right"
+                  className="flex gap-2 font-2 text-2"
+                >
+                  <p className="font-2 text-xs">
+                    Are you sure want to delete the selected checkbox
+                  </p>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      console.log("delete", checkboxClicked);
+                      toast("Deleted the selected from checkbox");
+                    }}
+                  >
+                    Yes
+                  </Button>
+                </PopoverContent>
+              </Popover>
+            </TableHead>
             <TableHead>Name</TableHead>
             <TableHead className="">Phone</TableHead>
             <TableHead className="text-right">Action</TableHead>
@@ -119,6 +169,16 @@ const UsersPage = () => {
                   setOpenModal(true);
                 }}
               >
+                <TableCell
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-[10%]"
+                >
+                  <Checkbox
+                    onCheckedChange={(checked) =>
+                      handleCheckboxClick(user.id, !!checked)
+                    }
+                  />
+                </TableCell>
                 <TableCell className="w-[40%]">{user.name}</TableCell>
                 <TableCell className="">{user.phoneNumber}</TableCell>
                 <TableCell
@@ -126,10 +186,32 @@ const UsersPage = () => {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Edit2Icon className="cursor-pointer size-4" />
-                  <Popover open={isDeleting} onOpenChange={setIsDeleting}>
+                  <Popover>
                     <PopoverTrigger>
-                      <Trash2Icon className="cursor-pointer size-4" />
+                      <Trash2Icon
+                        className="cursor-pointer size-4"
+                        onClick={() => console.log("user.id", user.id)}
+                      />
                     </PopoverTrigger>
+                    <PopoverContent
+                      side="left"
+                      className="flex gap-2 font-2 text-2"
+                    >
+                      <p className="font-2 text-xs flex flex-col gap-2">
+                        Are you sure want to delete the selected checkbox user:
+                        <p className="font-bold">{`${user.name}`}</p>
+                      </p>
+                      <Button
+                        className="flex justify-end items-end h-full"
+                        variant="destructive"
+                        onClick={() => {
+                          console.log("user.id", user.id);
+                          toast("Deleted the selected from checkbox");
+                        }}
+                      >
+                        Yes
+                      </Button>
+                    </PopoverContent>
                     {/* <PopoverDeleteButton
                       data={employee}
                       refetch={refetch}
