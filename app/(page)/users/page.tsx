@@ -1,7 +1,6 @@
 "use client";
 import { User } from "@/app/types";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogClose,
@@ -19,7 +18,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { toast } from "sonner";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   NavigationMenu,
@@ -29,8 +30,8 @@ import {
 } from "@/components/ui/navigation-menu";
 import {
   Popover,
-  PopoverTrigger,
   PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import {
   Table,
@@ -43,40 +44,77 @@ import {
 import { useFetchData } from "@/lib/queries/shared";
 import {
   Briefcase,
-  DeleteIcon,
   Edit2Icon,
   Mail,
   Phone,
+  PlusIcon,
   Shield,
   Trash2Icon,
   User as UserIcon,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const UsersPage = () => {
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>();
   const [openModal, setOpenModal] = useState<boolean>();
-  const [isDeleting, setIsDeleting] = useState<boolean>();
+  const [openCreateUser, setOpenCreateUser] = useState<boolean>();
+  // const [isDeleting, setIsDeleting] = useState<boolean>();
   const [searchInput, setSearchInput] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
   const [checkboxClicked, setCheckboxClicked] = useState<string[]>([]);
-  const { isPending, error, data } = useFetchData(
+  // const [deleteOneUser, setDeleteOneUser] = useState<User>();
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
+  const { isPending, error, data, refetch } = useFetchData(
     "users",
     page,
-    17,
+    14,
     debouncedSearch
   );
 
-  console.log("checkboxClicked", checkboxClicked);
+  const handleDeleteOneUser = async (user: string) => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/users", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // @ts-expect-error:no care
+        body: JSON.stringify({ id: user.id }),
+      });
 
-  const handleCheckboxClick = (userId: string, checked: boolean) => {
-    setCheckboxClicked((prev) =>
-      checked ? [...prev, userId] : prev.filter((id) => id !== userId)
-    );
+      const data = await res.json();
+      console.log("message", data.message);
+
+      if (res.ok) {
+        console.log("User deleted successfully!");
+      } else {
+        console.error("Error deleting user:", data.message);
+      }
+      setPopoverDeleteOne(false);
+      toast(`User is removed successfully`);
+      setLoading(false);
+      refetch();
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+
+  const handleCheckboxClick = (user: User, checked: boolean) => {
+    // @ts-expect-error:no care
+    setCheckboxClicked((prev) => {
+      if (checked) {
+        return [...prev, user];
+      } else {
+        // @ts-expect-error:no care
+        return prev.filter((u: User) => u.id !== user.id);
+      }
+    });
   };
 
   useEffect(() => {
@@ -86,14 +124,10 @@ const UsersPage = () => {
     return () => clearTimeout(handler);
   }, [searchInput]);
 
-  // if (isPending) return <p>Loading...</p>;
   if (error) return <p>Error loading data</p>;
 
-  // if (!data) {
-  //   return <>No data available</>;
-  // }
   return (
-    <div className="p-4 min-w-7xl gap-3 flex flex-col justify-between">
+    <div className="p-4 gap-3 flex flex-col justify-between">
       <div className="flex items-center justify-between">
         <Input
           className="w-50"
@@ -106,17 +140,26 @@ const UsersPage = () => {
               <NavigationMenuLink asChild>
                 {/* <Link className="flex flex-row items-center"> */}
                 <Button
-                  onClick={() =>
-                    toast("Clicked", {
-                      description: "Mantap",
-                      action: {
-                        label: "Undo",
-                        onClick: () => console.log("Undo"),
-                      },
-                    })
-                  }
+                  className=""
+                  // onClick={() =>
+                  //   toast("Clicked", {
+                  //     description: "Mantap",
+                  //     action: {
+                  //       label: "Undo",
+                  //       onClick: () => console.log("Undo"),
+                  //     },
+                  //   })
+                  // }
                 >
-                  Add New User
+                  <span className="block md:hidden">
+                    <PlusIcon />
+                  </span>
+                  <span
+                    className="hidden md:block"
+                    onClick={() => setOpenCreateUser(true)}
+                  >
+                    Add New User
+                  </span>
                 </Button>
                 {/* </Link> */}
               </NavigationMenuLink>
@@ -136,11 +179,21 @@ const UsersPage = () => {
                 </PopoverTrigger>
                 <PopoverContent
                   side="right"
-                  className="flex gap-2 font-2 text-2"
+                  className="flex flex-col gap-2 font-2 text-2"
                 >
-                  <p className="font-2 text-xs">
-                    Are you sure want to delete the selected checkbox
-                  </p>
+                  <div className="font-2 text-xs">
+                    <div className="pb-4">
+                      Are you sure want to delete the selected checkbox?
+                    </div>
+                    {/* @ts-expect-error:no care  */}
+                    {checkboxClicked.map((i: User, index) => {
+                      return (
+                        <div className="font-bold" key={i.id}>
+                          {index + 1}. {i.name}
+                        </div>
+                      );
+                    })}
+                  </div>
                   <Button
                     variant="destructive"
                     onClick={() => {
@@ -148,13 +201,13 @@ const UsersPage = () => {
                       toast("Deleted the selected from checkbox");
                     }}
                   >
-                    Yes
+                    {loading ? "Deleting..." : "Yes"}
                   </Button>
                 </PopoverContent>
               </Popover>
             </TableHead>
             <TableHead>Name</TableHead>
-            <TableHead className="">Phone</TableHead>
+            <TableHead className="hidden md:table-cell">Phone</TableHead>
             <TableHead className="text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -175,49 +228,55 @@ const UsersPage = () => {
                 >
                   <Checkbox
                     onCheckedChange={(checked) =>
-                      handleCheckboxClick(user.id, !!checked)
+                      handleCheckboxClick(user, !!checked)
                     }
                   />
                 </TableCell>
-                <TableCell className="w-[40%]">{user.name}</TableCell>
-                <TableCell className="">{user.phoneNumber}</TableCell>
+                <TableCell className="md:w-[30%] max-w-[120px] truncate">
+                  {user.name}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {user.phoneNumber}
+                </TableCell>
                 <TableCell
                   className="flex justify-end gap-4"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Edit2Icon className="cursor-pointer size-4" />
-                  <Popover>
+                  <Popover
+                    // @ts-expect-error:if-not-will-render-all
+                    open={popoverDeleteOne === user.id}
+                    onOpenChange={(isOpen) =>
+                      // @ts-expect-error:if-not-will-render-all
+                      setPopoverDeleteOne(isOpen ? user.id : null)
+                    }
+                  >
                     <PopoverTrigger>
                       <Trash2Icon
                         className="cursor-pointer size-4"
-                        onClick={() => console.log("user.id", user.id)}
+                        onClick={() => setPopoverDeleteOne(true)}
                       />
                     </PopoverTrigger>
                     <PopoverContent
                       side="left"
-                      className="flex gap-2 font-2 text-2"
+                      className="flex flex-col gap-2 font-2 text-2"
                     >
-                      <p className="font-2 text-xs flex flex-col gap-2">
+                      <div className="font-2 text-xs flex flex-col gap-2">
                         Are you sure want to delete the selected checkbox user:
-                        <p className="font-bold">{`${user.name}`}</p>
-                      </p>
+                        <div className="font-bold">{`${user.name}`}</div>
+                      </div>
                       <Button
-                        className="flex justify-end items-end h-full"
+                        className="flex"
                         variant="destructive"
+                        disabled={loading}
                         onClick={() => {
-                          console.log("user.id", user.id);
-                          toast("Deleted the selected from checkbox");
+                          // @ts-expect-error:no care
+                          handleDeleteOneUser(user);
                         }}
                       >
-                        Yes
+                        {loading ? "Deleting..." : "Yes"}
                       </Button>
                     </PopoverContent>
-                    {/* <PopoverDeleteButton
-                      data={employee}
-                      refetch={refetch}
-                      setIsDeleting={setIsDeleting}
-                      entity="users"
-                    /> */}
                   </Popover>
                 </TableCell>
               </TableRow>
@@ -252,6 +311,42 @@ const UsersPage = () => {
           </PaginationItem>
         </PaginationContent>
       </Pagination>
+      <Dialog onOpenChange={setOpenCreateUser} open={openCreateUser}>
+        <form>
+          <DialogTrigger asChild>
+            <Button variant="outline">Open Dialog</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit profile</DialogTitle>
+              <DialogDescription>
+                Make changes to your profile here. Click save when you&apos;re
+                done.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4">
+              <div className="grid gap-3">
+                <Label htmlFor="name-1">Name</Label>
+                <Input id="name-1" name="name" defaultValue="Pedro Duarte" />
+              </div>
+              <div className="grid gap-3">
+                <Label htmlFor="username-1">Username</Label>
+                <Input
+                  id="username-1"
+                  name="username"
+                  defaultValue="@peduarte"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button type="submit">Save changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </form>
+      </Dialog>
       <Dialog open={openModal} onOpenChange={setOpenModal}>
         <DialogTrigger asChild></DialogTrigger>
         <DialogContent className="sm:max-w-xl">
@@ -286,7 +381,7 @@ const UsersPage = () => {
                   <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
                     Email
                   </p>
-                  <p className="text-sm text-slate-900 truncate">
+                  <p className="text-sm text-slate-900 truncate md:w-100 w-40">
                     {selectedUser.email}
                   </p>
                 </div>
