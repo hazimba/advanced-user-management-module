@@ -8,12 +8,13 @@ const queryClient = new QueryClient();
 const PageLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex min-h-screen justify-between flex-col pt-1">
-      <div>
+      <div className="flex flex-col gap-4">
         <Header />
         <Toaster position="top-center" />
-
         <QueryClientProvider client={queryClient}>
-          <main className="px-4">{children}</main>
+          <div className="flex w-screen items-center justify-center">
+            <main className="px-4 flex items-center">{children}</main>
+          </div>
         </QueryClientProvider>
       </div>
       <Footer />
