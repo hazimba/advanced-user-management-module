@@ -67,7 +67,7 @@ const UsersPage = () => {
   const { isPending, error, data } = useFetchData(
     "users",
     page,
-    15,
+    17,
     debouncedSearch
   );
 
@@ -93,7 +93,7 @@ const UsersPage = () => {
   //   return <>No data available</>;
   // }
   return (
-    <div className="p-4">
+    <div className="p-4 min-w-7xl gap-3 flex flex-col justify-between">
       <div className="flex items-center justify-between">
         <Input
           className="w-50"

@@ -10,7 +10,7 @@ import ModeToggle from "./mode-toggle";
 
 const Header = () => {
   return (
-    <header className="w-screen sticky top-1 h-14 p-1 z-50">
+    <header className="w-screen sticky top-4 h-14 p-1 z-50">
       <div className="flex max-w-7xl mx-auto justify-between items-center px-2">
         <div className="flex items-center lg:space-x-2 lg:px-1 lg:pr-3 rounded-full group transition-all duration-300">
           <Link href="/" className="flex items-center">
@@ -30,7 +30,10 @@ const Header = () => {
           <NavigationMenuList>
             <NavigationMenuItem className="flex gap-4">
               <NavigationMenuLink asChild>
-                <Link href="/docs">Users</Link>
+                <Link href="/users">Users</Link>
+              </NavigationMenuLink>
+              <NavigationMenuLink asChild>
+                <Link href="/permission">Permissions</Link>
               </NavigationMenuLink>
               <NavigationMenuLink asChild>
                 <ModeToggle toggle />
