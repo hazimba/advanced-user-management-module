@@ -21,6 +21,14 @@ import {
 import { toast } from "sonner";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   NavigationMenu,
@@ -42,6 +50,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useFetchData } from "@/lib/queries/shared";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Briefcase,
   Edit2Icon,
@@ -52,15 +61,36 @@ import {
   Trash2Icon,
   User as UserIcon,
 } from "lucide-react";
-import Image from "next/image";
+// import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+const formSchema = z.object({
+  name: z.string().min(2).max(50),
+  avatar: z.string(),
+  phoneNumber: z.string(),
+  role: z.string(),
+  bio: z.string(),
+  id: z.string(),
+  createdAt: z.any(),
+  active: z.boolean(),
+  email: z.string(),
+});
 
 const UsersPage = () => {
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>();
   const [openModal, setOpenModal] = useState<boolean>();
-  const [openCreateUser, setOpenCreateUser] = useState<boolean>();
+  const [openCreateUser, setOpenCreateUser] = useState<boolean>(false);
   // const [isDeleting, setIsDeleting] = useState<boolean>();
   const [searchInput, setSearchInput] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
@@ -75,6 +105,50 @@ const UsersPage = () => {
     14,
     debouncedSearch
   );
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      active: true,
+      avatar: "",
+      phoneNumber: "",
+      email: "",
+      role: "",
+      bio: "",
+      id: "",
+    },
+  });
+
+  // @ts-expect-error:no care
+  const onSubmit = async (value) => {
+    console.log(value);
+
+    try {
+      setLoading(true);
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(value),
+      });
+      console.log("res.status", res.status);
+      const data = await res.json();
+      console.log("message:", data.message);
+      setOpenCreateUser(false);
+      setLoading(false);
+      refetch();
+      form.reset();
+      toast(
+        <div className="flex w-full justify-center items-center font-bold">
+          User created successfully
+        </div>
+      );
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
 
   const handleDeleteOneUser = async (user: string) => {
     try {
@@ -311,41 +385,125 @@ const UsersPage = () => {
           </PaginationItem>
         </PaginationContent>
       </Pagination>
-      <Dialog onOpenChange={setOpenCreateUser} open={openCreateUser}>
-        <form>
-          <DialogTrigger asChild>
-            <Button variant="outline">Open Dialog</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit profile</DialogTitle>
-              <DialogDescription>
-                Make changes to your profile here. Click save when you&apos;re
-                done.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4">
-              <div className="grid gap-3">
-                <Label htmlFor="name-1">Name</Label>
-                <Input id="name-1" name="name" defaultValue="Pedro Duarte" />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="username-1">Username</Label>
-                <Input
-                  id="username-1"
-                  name="username"
-                  defaultValue="@peduarte"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-              <Button type="submit">Save changes</Button>
-            </DialogFooter>
-          </DialogContent>
-        </form>
+      <Dialog open={openCreateUser} onOpenChange={setOpenCreateUser}>
+        <DialogContent className="sm:max-w-[425px] max-h-[500px] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Edit profile</DialogTitle>
+            <DialogDescription>
+              Make changes to your profile here. Click save when you&apos;re
+              done.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="id"
+                render={({ field }) => (
+                  <FormItem className="hidden">
+                    <FormLabel>id</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter id..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter name..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter email..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter phone number..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <FormControl>
+                      <Select>
+                        <SelectTrigger className="w-full" {...field}>
+                          <SelectValue placeholder="Select a role..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="guest">Guest</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="bio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bio</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter bio..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="avatar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Avatar</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter avatar..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button disabled={loading} type="submit">
+                {loading ? "Creating..." : "Create"}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
       </Dialog>
       <Dialog open={openModal} onOpenChange={setOpenModal}>
         <DialogTrigger asChild></DialogTrigger>
@@ -358,12 +516,20 @@ const UsersPage = () => {
           </DialogHeader>
           {selectedUser && (
             <div className="lg:mt-6 space-y-4">
-              <Image
-                src={selectedUser.avatar}
-                height={200}
-                width={200}
-                alt=""
-              />
+              {/* {selectedUser.avatar ? (
+                <Image
+                  src={
+                    selectedUser.avatar
+                      ? selectedUser.avatar
+                      : "https://avatars.githubusercontent.com/u/31102952"
+                  }
+                  height={200}
+                  width={200}
+                  alt=""
+                />
+              ) : (
+                <></>
+              )} */}
               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
                 <UserIcon className="w-5 h-5 text-slate-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">

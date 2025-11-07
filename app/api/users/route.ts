@@ -29,6 +29,22 @@ export async function POST(request: Request) {
   try {
     const user = await request.json();
     console.log("user", user);
+
+    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(user),
+    });
+
+    if (!res.ok) throw new Error("Failed to create user");
+
+    return NextResponse.json(
+      { message: "Success Create User" },
+      { status: 200 }
+    );
   } catch (error) {
     console.log("error", error);
   }
