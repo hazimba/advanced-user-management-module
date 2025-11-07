@@ -1,7 +1,6 @@
 "use client";
 import { User } from "@/app/types";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogClose,
@@ -19,7 +18,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { toast } from "sonner";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   NavigationMenu,
@@ -29,8 +30,8 @@ import {
 } from "@/components/ui/navigation-menu";
 import {
   Popover,
-  PopoverTrigger,
   PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import {
   Table,
@@ -43,31 +44,29 @@ import {
 import { useFetchData } from "@/lib/queries/shared";
 import {
   Briefcase,
-  DeleteIcon,
   Edit2Icon,
   Mail,
   Phone,
+  PlusIcon,
   Shield,
   Trash2Icon,
   User as UserIcon,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const UsersPage = () => {
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>();
   const [openModal, setOpenModal] = useState<boolean>();
-  const [isDeleting, setIsDeleting] = useState<boolean>();
+  // const [isDeleting, setIsDeleting] = useState<boolean>();
   const [searchInput, setSearchInput] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
   const [checkboxClicked, setCheckboxClicked] = useState<string[]>([]);
   const { isPending, error, data } = useFetchData(
     "users",
     page,
-    17,
+    15,
     debouncedSearch
   );
 
@@ -93,7 +92,7 @@ const UsersPage = () => {
   //   return <>No data available</>;
   // }
   return (
-    <div className="p-4 min-w-7xl gap-3 flex flex-col justify-between">
+    <div className="p-4 gap-3 flex flex-col justify-between">
       <div className="flex items-center justify-between">
         <Input
           className="w-50"
@@ -106,6 +105,7 @@ const UsersPage = () => {
               <NavigationMenuLink asChild>
                 {/* <Link className="flex flex-row items-center"> */}
                 <Button
+                  className=""
                   onClick={() =>
                     toast("Clicked", {
                       description: "Mantap",
@@ -116,7 +116,10 @@ const UsersPage = () => {
                     })
                   }
                 >
-                  Add New User
+                  <span className="block md:hidden">
+                    <PlusIcon />
+                  </span>
+                  <span className="hidden md:block">Add New User</span>
                 </Button>
                 {/* </Link> */}
               </NavigationMenuLink>
@@ -154,7 +157,7 @@ const UsersPage = () => {
               </Popover>
             </TableHead>
             <TableHead>Name</TableHead>
-            <TableHead className="">Phone</TableHead>
+            <TableHead className="hidden md:table-cell">Phone</TableHead>
             <TableHead className="text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -179,8 +182,12 @@ const UsersPage = () => {
                     }
                   />
                 </TableCell>
-                <TableCell className="w-[40%]">{user.name}</TableCell>
-                <TableCell className="">{user.phoneNumber}</TableCell>
+                <TableCell className="md:w-[30%] max-w-[120px] truncate">
+                  {user.name}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {user.phoneNumber}
+                </TableCell>
                 <TableCell
                   className="flex justify-end gap-4"
                   onClick={(e) => e.stopPropagation()}
@@ -197,10 +204,10 @@ const UsersPage = () => {
                       side="left"
                       className="flex gap-2 font-2 text-2"
                     >
-                      <p className="font-2 text-xs flex flex-col gap-2">
+                      <div className="font-2 text-xs flex flex-col gap-2">
                         Are you sure want to delete the selected checkbox user:
-                        <p className="font-bold">{`${user.name}`}</p>
-                      </p>
+                        <div className="font-bold">{`${user.name}`}</div>
+                      </div>
                       <Button
                         className="flex justify-end items-end h-full"
                         variant="destructive"
@@ -286,7 +293,7 @@ const UsersPage = () => {
                   <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
                     Email
                   </p>
-                  <p className="text-sm text-slate-900 truncate">
+                  <p className="text-sm text-slate-900 truncate md:w-100 w-40">
                     {selectedUser.email}
                   </p>
                 </div>
