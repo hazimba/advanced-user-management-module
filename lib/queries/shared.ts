@@ -6,7 +6,7 @@ export const useFetchData = (
   limit: number,
   search: string
 ) => {
-  const { isPending, error, data } = useQuery({
+  const { isPending, error, data, refetch } = useQuery({
     queryKey: [entity, page, search],
     queryFn: async () => {
       const url = new URL(
@@ -29,5 +29,5 @@ export const useFetchData = (
       return json;
     },
   });
-  return { isPending, error, data };
+  return { isPending, error, data, refetch };
 };
