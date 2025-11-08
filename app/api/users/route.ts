@@ -1,16 +1,58 @@
+import { User } from "@/app/types";
 import { NextResponse } from "next/server";
 
 export async function DELETE(request: Request) {
   try {
-    const { id } = await request.json();
-    console.log("received id from request", id);
+    const user = await request.json();
 
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${id}`;
-    console.log("url", url);
+    if (Array.isArray(user)) {
+      await Promise.all(
+        user.map(async (i: User) => {
+          const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${i.id}`;
 
-    // Example: actually call mockapi to delete
+          const res = await fetch(url, { method: "DELETE" });
+          if (!res.ok) throw new Error("Failed to delete from mockapi");
+        })
+      );
+
+      await Promise.all(
+        user.map(async (i: User) => {
+          const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+
+          const res = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(i),
+          });
+
+          if (!res.ok)
+            throw new Error("Failed to patch users to deletedUser collection");
+        })
+      );
+
+      return NextResponse.json(
+        { message: "Successful delete users and patch users to deletedUser" },
+        { status: 200 }
+      );
+    }
+
+    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${user.id}`;
+    const urlDel = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+
     const res = await fetch(url, { method: "DELETE" });
+
+    const resDel = await fetch(urlDel, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(user),
+    });
+
     if (!res.ok) throw new Error("Failed to delete from mockapi");
+    if (!resDel.ok) throw new Error("Failed to delete from mockapi");
 
     return NextResponse.json(
       { message: "User deleted successfully" },

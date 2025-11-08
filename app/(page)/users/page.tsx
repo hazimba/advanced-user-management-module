@@ -71,7 +71,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
 enum Role {
@@ -92,8 +92,10 @@ const formSchema = z.object({
   email: z.email("invalid email"),
 });
 
+export type FormSchema = z.infer<typeof formSchema>;
+
 interface FormCreateEditUserProps {
-  form: any;
+  form: UseFormReturn<FormSchema>;
   loading: boolean;
   setLoading: (arg0: boolean) => void;
   refetch: () => void;
@@ -113,7 +115,7 @@ const FormCreateEditUser = ({
   selectedEditUser,
   setSelectedEditUser,
 }: FormCreateEditUserProps) => {
-  const onSubmit = async (value: User) => {
+  const onSubmit = async (value: FormSchema) => {
     console.log(value);
 
     try {
@@ -148,18 +150,8 @@ const FormCreateEditUser = ({
         ...selectedEditUser,
         role: selectedEditUser.role as Role,
       });
-    } else {
-      form.reset({
-        name: "",
-        avatar: "",
-        phoneNumber: "",
-        role: undefined,
-        bio: "",
-        id: "",
-        createdAt: undefined,
-        active: true,
-        email: "",
-      });
+    } else if (!selectedEditUser) {
+      form.reset({});
     }
   }, [openCreateUser, selectedEditUser, form]);
 
@@ -168,7 +160,7 @@ const FormCreateEditUser = ({
       open={openCreateUser}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          form.reset();
+          form.reset({});
           setSelectedEditUser(undefined);
         }
         setOpenCreateUser(isOpen);
@@ -309,6 +301,7 @@ const UsersPage = () => {
   // const [deleteOneUser, setDeleteOneUser] = useState<User>();
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedEditUser, setSelectedEditUser] = useState<User>();
+  const [popoverBulkDelete, setPopoverBulkDelete] = useState<boolean>();
   // const [openModalEditUser, setOpenModalEditUser] = useState<boolean>();
 
   const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
@@ -333,7 +326,7 @@ const UsersPage = () => {
     },
   });
 
-  const handleDeleteOneUser = async (user: string) => {
+  const handleDeleteUser = async (user: string | string[]) => {
     try {
       setLoading(true);
       const res = await fetch("/api/users", {
@@ -341,8 +334,7 @@ const UsersPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        // @ts-expect-error:no care
-        body: JSON.stringify({ id: user.id }),
+        body: JSON.stringify(user),
       });
 
       const data = await res.json();
@@ -356,6 +348,8 @@ const UsersPage = () => {
       setPopoverDeleteOne(false);
       toast(`User is removed successfully`);
       setLoading(false);
+      setPopoverBulkDelete(false);
+      setCheckboxClicked([]);
       refetch();
     } catch (error) {
       console.log("error", error);
@@ -435,7 +429,10 @@ const UsersPage = () => {
         <TableHeader>
           <TableRow>
             <TableHead>
-              <Popover>
+              <Popover
+                open={popoverBulkDelete}
+                onOpenChange={setPopoverBulkDelete}
+              >
                 <PopoverTrigger>
                   {checkboxClicked.length > 0 && (
                     <Trash2Icon className="cursor-pointer size-4" />
@@ -443,7 +440,7 @@ const UsersPage = () => {
                 </PopoverTrigger>
                 <PopoverContent
                   side="right"
-                  className="flex flex-col gap-2 font-2 text-2"
+                  className="flex flex-col gap-2 font-2"
                 >
                   <div className="font-2 text-xs">
                     <div className="pb-4">
@@ -462,7 +459,8 @@ const UsersPage = () => {
                     variant="destructive"
                     onClick={() => {
                       console.log("delete", checkboxClicked);
-                      toast("Deleted the selected from checkbox");
+                      handleDeleteUser(checkboxClicked);
+                      setPopoverBulkDelete(false);
                     }}
                   >
                     {loading ? "Deleting..." : "Yes"}
@@ -470,12 +468,12 @@ const UsersPage = () => {
                 </PopoverContent>
               </Popover>
             </TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead className="hidden md:table-cell">Phone</TableHead>
-            <TableHead className="text-right">Action</TableHead>
+            <TableHead>NAME</TableHead>
+            <TableHead className="hidden md:table-cell">PHONE</TableHead>
+            <TableHead className="text-right">ACTION</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className={isPending ? `` : `border-1`}>
+        <TableBody className={isPending ? `` : ``}>
           {data && data?.length ? (
             data?.map((user: User) => (
               <TableRow
@@ -541,7 +539,7 @@ const UsersPage = () => {
                         disabled={loading}
                         onClick={() => {
                           // @ts-expect-error:no care
-                          handleDeleteOneUser(user);
+                          handleDeleteUser(user);
                         }}
                       >
                         {loading ? "Deleting..." : "Yes"}
