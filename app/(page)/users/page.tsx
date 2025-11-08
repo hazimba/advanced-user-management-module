@@ -1,5 +1,6 @@
 "use client";
 import { User } from "@/app/types";
+import dayjs from "dayjs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -61,7 +62,7 @@ import {
   Trash2Icon,
   User as UserIcon,
 } from "lucide-react";
-// import Image from "next/image";
+import Image from "next/image";
 import {
   Select,
   SelectContent,
@@ -73,6 +74,10 @@ import {
 import { useEffect, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
+import { PhoneInput } from "@/components/phone-input";
+import { ImageUploadForm } from "@/components/file-upload";
+import { handleFileSelect } from "@/hooks/handleFileSelect";
+import { Spinner } from "@/components/ui/spinner";
 
 enum Role {
   admin = "admin",
@@ -81,15 +86,15 @@ enum Role {
 }
 
 const formSchema = z.object({
-  name: z.string().min(2, "min 2 char").max(50),
+  name: z.string().optional(), // .min(2, "min 2 char").max(50),
   avatar: z.string().optional(),
   phoneNumber: z.string().optional(),
-  role: z.enum(Role, "select one role"),
-  bio: z.string().min(1, "add bio"),
-  id: z.string(),
-  createdAt: z.any(),
-  active: z.boolean(),
-  email: z.email("invalid email"),
+  role: z.enum(Role, "select one role").optional(),
+  bio: z.string(), // .min(1, "add bio").max(500),
+  id: z.string().optional(),
+  createdAt: z.any().optional(),
+  active: z.string().optional(),
+  email: z.string().optional(), // email("invalid email"),
 });
 
 export type FormSchema = z.infer<typeof formSchema>;
@@ -115,11 +120,26 @@ const FormCreateEditUser = ({
   selectedEditUser,
   setSelectedEditUser,
 }: FormCreateEditUserProps) => {
+  const [file, setFile] = useState<File | null>(null);
+
   const onSubmit = async (value: FormSchema) => {
     console.log(value);
+    console.log("file", file);
 
     try {
       setLoading(true);
+
+      if (file) {
+        const imageUrl = await handleFileSelect(
+          "user-image",
+          file ? ([file] as unknown as FileList) : null,
+          form
+        );
+        if (imageUrl) {
+          value = { ...value, avatar: imageUrl };
+        }
+      }
+
       const res = await fetch("/api/users", {
         method: selectedEditUser ? "PATCH" : "POST",
         headers: {
@@ -150,8 +170,6 @@ const FormCreateEditUser = ({
         ...selectedEditUser,
         role: selectedEditUser.role as Role,
       });
-    } else if (!selectedEditUser) {
-      form.reset({});
     }
   }, [openCreateUser, selectedEditUser, form]);
 
@@ -192,6 +210,22 @@ const FormCreateEditUser = ({
             />
             <FormField
               control={form.control}
+              name="avatar"
+              render={({ field }) => {
+                console.log("field", field);
+                return (
+                  <FormItem>
+                    <FormLabel>Avatar</FormLabel>
+                    <FormControl>
+                      <ImageUploadForm setFile={setFile} form={form} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+            <FormField
+              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -223,7 +257,8 @@ const FormCreateEditUser = ({
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter phone number..." {...field} />
+                    {/* <Input placeholder="Enter phone number..." {...field} /> */}
+                    <PhoneInput {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -268,20 +303,36 @@ const FormCreateEditUser = ({
             />
             <FormField
               control={form.control}
-              name="avatar"
+              name="active"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Avatar</FormLabel>
+                  <FormLabel>Status</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter avatar..." {...field} />
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger className="w-full" {...field}>
+                        <SelectValue placeholder="Select a status..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button disabled={loading} type="submit">
-              {loading ? "Creating..." : "Create"}
-            </Button>
+            {selectedEditUser ? (
+              <Button disabled={loading} type="submit">
+                {loading ? <Spinner /> : "Edit"}
+              </Button>
+            ) : (
+              <Button disabled={loading} type="submit">
+                {loading ? <Spinner /> : "Create"}
+              </Button>
+            )}
           </form>
         </Form>
       </DialogContent>
@@ -296,6 +347,7 @@ const UsersPage = () => {
   const [openCreateUser, setOpenCreateUser] = useState<boolean>(false);
   // const [isDeleting, setIsDeleting] = useState<boolean>();
   const [searchInput, setSearchInput] = useState<string>("");
+  const [selectInput, setSelectInput] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
   const [checkboxClicked, setCheckboxClicked] = useState<string[]>([]);
   // const [deleteOneUser, setDeleteOneUser] = useState<User>();
@@ -309,20 +361,22 @@ const UsersPage = () => {
     "users",
     page,
     14,
-    debouncedSearch
+    debouncedSearch,
+    selectInput
   );
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      active: true,
+      active: "",
       avatar: "",
       phoneNumber: "",
       email: "",
       role: undefined,
       bio: "",
       id: "",
+      createdAt: "",
     },
   });
 
@@ -336,17 +390,21 @@ const UsersPage = () => {
         },
         body: JSON.stringify(user),
       });
-
       const data = await res.json();
-      console.log("message", data.message);
 
       if (res.ok) {
         console.log("User deleted successfully!");
       } else {
         console.error("Error deleting user:", data.message);
       }
+
       setPopoverDeleteOne(false);
-      toast(`User is removed successfully`);
+      toast(
+        <div className="flex">
+          <div>User is removed successfully</div>
+          <Button>Undo Delete</Button>
+        </div>
+      );
       setLoading(false);
       setPopoverBulkDelete(false);
       setCheckboxClicked([]);
@@ -357,6 +415,7 @@ const UsersPage = () => {
   };
 
   const handleCheckboxClick = (user: User, checked: boolean) => {
+    console.log("user123", user);
     // @ts-expect-error:no care
     setCheckboxClicked((prev) => {
       if (checked) {
@@ -366,6 +425,10 @@ const UsersPage = () => {
         return prev.filter((u: User) => u.id !== user.id);
       }
     });
+  };
+
+  const handleCheckAll = (checked: boolean, allUsers: any) => {
+    setCheckboxClicked(checked ? allUsers : []);
   };
 
   useEffect(() => {
@@ -380,11 +443,36 @@ const UsersPage = () => {
   return (
     <div className="p-4 gap-3 flex flex-col justify-between">
       <div className="flex items-center justify-between">
-        <Input
-          className="w-50"
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search User..."
-        />
+        <div className="flex gap-6">
+          <Input
+            className="w-40"
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search user..."
+          />
+          <Select
+            onValueChange={(value) => setSelectInput(value)}
+            value={selectInput}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select a role..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="guest">Guest</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={() => {
+              setSearchInput("");
+              setSelectInput("");
+            }}
+          >
+            Clear Filter
+          </Button>
+        </div>
         <NavigationMenu>
           <NavigationMenuList>
             <NavigationMenuItem className="flex gap-4">
@@ -428,7 +516,13 @@ const UsersPage = () => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>
+            <TableHead className="flex items-center gap-3">
+              <Checkbox
+                checked={checkboxClicked?.length === data?.length}
+                onCheckedChange={(checked) => {
+                  handleCheckAll(!!checked, data);
+                }}
+              />
               <Popover
                 open={popoverBulkDelete}
                 onOpenChange={setPopoverBulkDelete}
@@ -447,10 +541,10 @@ const UsersPage = () => {
                       Are you sure want to delete the selected checkbox?
                     </div>
                     {/* @ts-expect-error:no care  */}
-                    {checkboxClicked.map((i: User, index) => {
+                    {checkboxClicked?.map((i: User, index) => {
                       return (
-                        <div className="font-bold" key={i.id}>
-                          {index + 1}. {i.name}
+                        <div className="font-bold" key={index}>
+                          {i.name}
                         </div>
                       );
                     })}
@@ -474,7 +568,7 @@ const UsersPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody className={isPending ? `` : ``}>
-          {data && data?.length ? (
+          {data ? (
             data?.map((user: User) => (
               <TableRow
                 className="w-screen"
@@ -486,13 +580,21 @@ const UsersPage = () => {
               >
                 <TableCell
                   onClick={(e) => e.stopPropagation()}
-                  className="w-[10%]"
+                  className="w-[10%] align-left"
                 >
-                  <Checkbox
-                    onCheckedChange={(checked) =>
-                      handleCheckboxClick(user, !!checked)
-                    }
-                  />
+                  <div
+                    key={user.id}
+                    className="flex items-center space-x-2 ml-0"
+                  >
+                    <Checkbox
+                      checked={checkboxClicked.some(
+                        (u: User | any) => u.id === user.id
+                      )}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxClick(user, !!checked)
+                      }
+                    />
+                  </div>
                 </TableCell>
                 <TableCell className="md:w-[30%] max-w-[120px] truncate">
                   {user.name}
@@ -600,7 +702,7 @@ const UsersPage = () => {
           </DialogHeader>
           {selectedUser && (
             <div className="lg:mt-6 space-y-4">
-              {/* {selectedUser.avatar ? (
+              {selectedUser.avatar ? (
                 <Image
                   src={
                     selectedUser.avatar
@@ -613,7 +715,7 @@ const UsersPage = () => {
                 />
               ) : (
                 <></>
-              )} */}
+              )}
               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
                 <UserIcon className="w-5 h-5 text-slate-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -667,6 +769,28 @@ const UsersPage = () => {
                   <p className="text-sm text-slate-900 font-medium">
                     {selectedUser.role}
                   </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
+                <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                    Bio
+                  </p>
+                  <p className="text-sm text-slate-900 font-medium">
+                    {selectedUser.bio}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
+                <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                    Created At
+                  </div>
+                  <div className="text-sm text-slate-900 font-medium">
+                    {dayjs(selectedUser?.createdAt).format("DD-MM-YY")}
+                  </div>
                 </div>
               </div>
             </div>

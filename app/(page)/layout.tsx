@@ -7,7 +7,10 @@ const queryClient = new QueryClient();
 
 const PageLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="flex min-h-screen justify-between flex-col pt-1">
+    <div
+      className="flex min-h-screen justify-between flex-col pt-1"
+      suppressHydrationWarning
+    >
       <div suppressHydrationWarning className="flex flex-col gap-6">
         <Header />
         <Toaster position="top-center" />
