@@ -19,14 +19,9 @@ export const useFetchData = (
       }).toString();
 
       const res = await fetch(url);
-      const json = await res.json();
+      const data = await res.json();
 
-      if (!Array.isArray(json)) {
-        console.warn("Unexpected API response:", json);
-        return [];
-      }
-
-      return json;
+      return data;
     },
   });
   return { isPending, error, data, refetch };

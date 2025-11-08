@@ -71,63 +71,57 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
+enum Role {
+  admin = "admin",
+  user = "user",
+  guest = "guest",
+}
+
 const formSchema = z.object({
-  name: z.string().min(2).max(50),
-  avatar: z.string(),
-  phoneNumber: z.string(),
-  role: z.string(),
-  bio: z.string(),
+  name: z.string().min(2, "min 2 char").max(50),
+  avatar: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  role: z.enum(Role, "select one role"),
+  bio: z.string().min(1, "add bio"),
   id: z.string(),
   createdAt: z.any(),
   active: z.boolean(),
-  email: z.string(),
+  email: z.email("invalid email"),
 });
 
-const UsersPage = () => {
-  const [page, setPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState<User | null>();
-  const [openModal, setOpenModal] = useState<boolean>();
-  const [openCreateUser, setOpenCreateUser] = useState<boolean>(false);
-  // const [isDeleting, setIsDeleting] = useState<boolean>();
-  const [searchInput, setSearchInput] = useState<string>("");
-  const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
-  const [checkboxClicked, setCheckboxClicked] = useState<string[]>([]);
-  // const [deleteOneUser, setDeleteOneUser] = useState<User>();
-  const [loading, setLoading] = useState<boolean>(false);
+export type FormSchema = z.infer<typeof formSchema>;
 
-  const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
-  const { isPending, error, data, refetch } = useFetchData(
-    "users",
-    page,
-    14,
-    debouncedSearch
-  );
+interface FormCreateEditUserProps {
+  form: UseFormReturn<FormSchema>;
+  loading: boolean;
+  setLoading: (arg0: boolean) => void;
+  refetch: () => void;
+  openCreateUser: boolean;
+  setOpenCreateUser: (arg0: boolean) => void;
+  selectedEditUser?: User;
+  setSelectedEditUser: (arg0: User | undefined) => void;
+}
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      active: true,
-      avatar: "",
-      phoneNumber: "",
-      email: "",
-      role: "",
-      bio: "",
-      id: "",
-    },
-  });
-
-  // @ts-expect-error:no care
-  const onSubmit = async (value) => {
+const FormCreateEditUser = ({
+  form,
+  loading,
+  setLoading,
+  refetch,
+  openCreateUser,
+  setOpenCreateUser,
+  selectedEditUser,
+  setSelectedEditUser,
+}: FormCreateEditUserProps) => {
+  const onSubmit = async (value: FormSchema) => {
     console.log(value);
 
     try {
       setLoading(true);
       const res = await fetch("/api/users", {
-        method: "POST",
+        method: selectedEditUser ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -150,7 +144,189 @@ const UsersPage = () => {
     }
   };
 
-  const handleDeleteOneUser = async (user: string) => {
+  useEffect(() => {
+    if (selectedEditUser) {
+      form.reset({
+        ...selectedEditUser,
+        role: selectedEditUser.role as Role,
+      });
+    } else if (!selectedEditUser) {
+      form.reset({});
+    }
+  }, [openCreateUser, selectedEditUser, form]);
+
+  return (
+    <Dialog
+      open={openCreateUser}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          form.reset({});
+          setSelectedEditUser(undefined);
+        }
+        setOpenCreateUser(isOpen);
+      }}
+    >
+      <DialogContent className="sm:max-w-[425px] max-h-[500px] overflow-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {!selectedEditUser ? "Create User" : "Edit User"}
+          </DialogTitle>
+          <DialogDescription>
+            Make changes to your profile here. Click save when you&apos;re done.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="id"
+              render={({ field }) => (
+                <FormItem className="hidden">
+                  <FormLabel>id</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter id..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter name..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter email..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter phone number..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role</FormLabel>
+                  <FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger className="w-full" {...field}>
+                        <SelectValue placeholder="Select a role..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="guest">Guest</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bio</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter bio..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="avatar"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Avatar</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter avatar..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button disabled={loading} type="submit">
+              {loading ? "Creating..." : "Create"}
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const UsersPage = () => {
+  const [page, setPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<User | null>();
+  const [openModal, setOpenModal] = useState<boolean>();
+  const [openCreateUser, setOpenCreateUser] = useState<boolean>(false);
+  // const [isDeleting, setIsDeleting] = useState<boolean>();
+  const [searchInput, setSearchInput] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
+  const [checkboxClicked, setCheckboxClicked] = useState<string[]>([]);
+  // const [deleteOneUser, setDeleteOneUser] = useState<User>();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [selectedEditUser, setSelectedEditUser] = useState<User>();
+  const [popoverBulkDelete, setPopoverBulkDelete] = useState<boolean>();
+  // const [openModalEditUser, setOpenModalEditUser] = useState<boolean>();
+
+  const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
+  const { isPending, error, data, refetch } = useFetchData(
+    "users",
+    page,
+    14,
+    debouncedSearch
+  );
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      active: true,
+      avatar: "",
+      phoneNumber: "",
+      email: "",
+      role: undefined,
+      bio: "",
+      id: "",
+    },
+  });
+
+  const handleDeleteUser = async (user: string | string[]) => {
     try {
       setLoading(true);
       const res = await fetch("/api/users", {
@@ -158,8 +334,7 @@ const UsersPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        // @ts-expect-error:no care
-        body: JSON.stringify({ id: user.id }),
+        body: JSON.stringify(user),
       });
 
       const data = await res.json();
@@ -173,6 +348,8 @@ const UsersPage = () => {
       setPopoverDeleteOne(false);
       toast(`User is removed successfully`);
       setLoading(false);
+      setPopoverBulkDelete(false);
+      setCheckboxClicked([]);
       refetch();
     } catch (error) {
       console.log("error", error);
@@ -225,12 +402,19 @@ const UsersPage = () => {
                   //   })
                   // }
                 >
-                  <span className="block md:hidden">
+                  <span
+                    className="block md:hidden"
+                    onClick={() => {
+                      setOpenCreateUser(true);
+                    }}
+                  >
                     <PlusIcon />
                   </span>
                   <span
                     className="hidden md:block"
-                    onClick={() => setOpenCreateUser(true)}
+                    onClick={() => {
+                      setOpenCreateUser(true);
+                    }}
                   >
                     Add New User
                   </span>
@@ -245,7 +429,10 @@ const UsersPage = () => {
         <TableHeader>
           <TableRow>
             <TableHead>
-              <Popover>
+              <Popover
+                open={popoverBulkDelete}
+                onOpenChange={setPopoverBulkDelete}
+              >
                 <PopoverTrigger>
                   {checkboxClicked.length > 0 && (
                     <Trash2Icon className="cursor-pointer size-4" />
@@ -253,7 +440,7 @@ const UsersPage = () => {
                 </PopoverTrigger>
                 <PopoverContent
                   side="right"
-                  className="flex flex-col gap-2 font-2 text-2"
+                  className="flex flex-col gap-2 font-2"
                 >
                   <div className="font-2 text-xs">
                     <div className="pb-4">
@@ -272,7 +459,8 @@ const UsersPage = () => {
                     variant="destructive"
                     onClick={() => {
                       console.log("delete", checkboxClicked);
-                      toast("Deleted the selected from checkbox");
+                      handleDeleteUser(checkboxClicked);
+                      setPopoverBulkDelete(false);
                     }}
                   >
                     {loading ? "Deleting..." : "Yes"}
@@ -280,12 +468,12 @@ const UsersPage = () => {
                 </PopoverContent>
               </Popover>
             </TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead className="hidden md:table-cell">Phone</TableHead>
-            <TableHead className="text-right">Action</TableHead>
+            <TableHead>NAME</TableHead>
+            <TableHead className="hidden md:table-cell">PHONE</TableHead>
+            <TableHead className="text-right">ACTION</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className={isPending ? `` : `border-1`}>
+        <TableBody className={isPending ? `` : ``}>
           {data && data?.length ? (
             data?.map((user: User) => (
               <TableRow
@@ -316,7 +504,13 @@ const UsersPage = () => {
                   className="flex justify-end gap-4"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Edit2Icon className="cursor-pointer size-4" />
+                  <Edit2Icon
+                    className="cursor-pointer size-4"
+                    onClick={() => {
+                      setSelectedEditUser(user);
+                      setOpenCreateUser(true);
+                    }}
+                  />
                   <Popover
                     // @ts-expect-error:if-not-will-render-all
                     open={popoverDeleteOne === user.id}
@@ -345,7 +539,7 @@ const UsersPage = () => {
                         disabled={loading}
                         onClick={() => {
                           // @ts-expect-error:no care
-                          handleDeleteOneUser(user);
+                          handleDeleteUser(user);
                         }}
                       >
                         {loading ? "Deleting..." : "Yes"}
@@ -385,126 +579,16 @@ const UsersPage = () => {
           </PaginationItem>
         </PaginationContent>
       </Pagination>
-      <Dialog open={openCreateUser} onOpenChange={setOpenCreateUser}>
-        <DialogContent className="sm:max-w-[425px] max-h-[500px] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>Edit profile</DialogTitle>
-            <DialogDescription>
-              Make changes to your profile here. Click save when you&apos;re
-              done.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
-                control={form.control}
-                name="id"
-                render={({ field }) => (
-                  <FormItem className="hidden">
-                    <FormLabel>id</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter id..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter name..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter email..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter phone number..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <FormControl>
-                      <Select>
-                        <SelectTrigger className="w-full" {...field}>
-                          <SelectValue placeholder="Select a role..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="guest">Guest</SelectItem>
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter bio..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="avatar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Avatar</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter avatar..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button disabled={loading} type="submit">
-                {loading ? "Creating..." : "Create"}
-              </Button>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <FormCreateEditUser
+        form={form}
+        loading={loading}
+        setLoading={setLoading}
+        refetch={refetch}
+        openCreateUser={openCreateUser}
+        setOpenCreateUser={setOpenCreateUser}
+        selectedEditUser={selectedEditUser}
+        setSelectedEditUser={setSelectedEditUser}
+      />
       <Dialog open={openModal} onOpenChange={setOpenModal}>
         <DialogTrigger asChild></DialogTrigger>
         <DialogContent className="sm:max-w-xl">
