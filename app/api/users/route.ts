@@ -46,7 +46,34 @@ export async function POST(request: Request) {
       { status: 200 }
     );
   } catch (error) {
-    console.log("error", error);
+    console.error("error", error);
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const user = await request.json();
+
+    const { id, ...updateData } = user;
+    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${id}`;
+    console.log("Updating user with ID:", id, "with data:", updateData);
+
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(user),
+    });
+
+    if (!res.ok) throw new Error("Failed to edit user");
+
+    return NextResponse.json(
+      { message: "Success update user" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("error", error);
   }
 }
 
