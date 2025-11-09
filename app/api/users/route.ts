@@ -1,36 +1,27 @@
-import { User } from "@/app/types";
+// import { User } from "@/app/types";
 import { NextResponse } from "next/server";
+import { v4 as uuidv4 } from "uuid";
 
 export async function DELETE(request: Request) {
   try {
     const user = await request.json();
 
     if (Array.isArray(user)) {
-      await Promise.all(
-        user.map(async (i: User) => {
-          const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${i.id}`;
+      for (const u of user) {
+        const urlDel = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+        const resDel = await fetch(urlDel, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(u),
+        });
+        if (!resDel.ok) throw new Error("error posting to deletedUser");
 
-          const res = await fetch(url, { method: "DELETE" });
-          if (!res.ok) throw new Error("Failed to delete from mockapi");
-        })
-      );
-
-      await Promise.all(
-        user.map(async (i: User) => {
-          const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
-
-          const res = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(i),
-          });
-
-          if (!res.ok)
-            throw new Error("Failed to patch users to deletedUser collection");
-        })
-      );
+        const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${u.id}`;
+        const res = await fetch(url, { method: "DELETE" });
+        if (!res.ok) throw new Error("error deleting user");
+      }
 
       return NextResponse.json(
         { message: "Successful delete users and patch users to deletedUser" },
@@ -80,6 +71,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         ...user,
+        uuid: uuidv4(),
         createdAt: Date.now(),
       }),
     });

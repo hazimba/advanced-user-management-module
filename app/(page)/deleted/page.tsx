@@ -1,6 +1,7 @@
 "use client";
 import { User } from "@/app/types";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -12,39 +13,48 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useFetchData } from "@/lib/queries/shared";
+import { useMutation } from "@tanstack/react-query";
 import { CornerDownLeft, Trash } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { FormSchema } from "../users/page";
 
 const PermissionPage = () => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState<boolean>(false);
   const [recoverLoading, setRecoverLoading] = useState<boolean>(false);
 
   const { isPending, refetch, data } = useFetchData(
     "deletedUser",
     1,
-    10,
+    20,
     "",
     ""
   );
 
-  const handleRecoverAll = async (data: User[]) => {
-    try {
-      setRecoverLoading(true);
+  const mutation = useMutation({
+    mutationFn: async (data: FormSchema) => {
       const res = await fetch("/api/deleted", {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      refetch();
-      toast(`All user is recovered`);
-      if (!res.ok) throw new Error("Error");
-    } catch (error) {
-      console.log("error", error);
-    }
-    setRecoverLoading(false);
+      if (!res.ok) throw new Error("Error recover user");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("All user successfully recover");
+      queryClient.invalidateQueries({ queryKey: ["deletedUser"] });
+      setRecoverLoading(false);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleRecoverAll = async (data: User[]) => {
+    setRecoverLoading(true);
+    await mutation.mutateAsync(data);
   };
 
   return (
@@ -96,8 +106,8 @@ const PermissionPage = () => {
         <TableBody>
           {!isPending ? (
             <>
-              {data?.map((du: User) => (
-                <TableRow key={du.id}>
+              {data?.map((du: User, index) => (
+                <TableRow key={index}>
                   <TableCell className="font-medium">{du.name}</TableCell>
                   <TableCell>{du.phoneNumber}</TableCell>
                   <TableCell className="text-left">{du.email}</TableCell>

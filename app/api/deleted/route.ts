@@ -24,38 +24,34 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const data = await request.json();
+    console.log("data", data);
     const id = data.id;
 
     console.log("data123", data);
 
     if (Array.isArray(data)) {
-      await Promise.all(
-        data.map(async (dt: User) => {
-          // deletedUser collection
-          const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser/${dt.id}`;
+      for (const dt of data) {
+        const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser/${dt.id}`;
+        const res = await fetch(url, { method: "DELETE" });
 
-          await fetch(url, { method: "DELETE" });
-        })
-      );
-
-      await Promise.all(
-        data.map(async (dt: User) => {
-          // user collection
-          const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
-
-          await fetch(url, {
+        if (res.ok) {
+          const postUrl = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
+          await fetch(postUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(dt),
           });
-        })
-      );
+        } else {
+          console.warn(`Failed to delete deletedUser with id: ${dt.id}`);
+        }
+      }
 
-      return NextResponse.json({
-        message: "Successfully recover all deleted user to user collection",
-      });
+      return NextResponse.json(
+        { message: "Successfully restored users" },
+        { status: 200 }
+      );
     }
 
     const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser/${id}`;
