@@ -78,7 +78,10 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(user),
+      body: JSON.stringify({
+        ...user,
+        createdAt: Date.now(),
+      }),
     });
 
     if (!res.ok) throw new Error("Failed to create user");

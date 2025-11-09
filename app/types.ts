@@ -1,5 +1,5 @@
 export type User = {
-  active: boolean;
+  active: string;
   avatar: string;
   bio: string;
   id: string;
@@ -7,4 +7,5 @@ export type User = {
   phoneNumber: string;
   role: string;
   email: string;
+  createdAt: any;
 };
