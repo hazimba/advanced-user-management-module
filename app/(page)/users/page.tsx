@@ -1,5 +1,6 @@
 "use client";
 import { User } from "@/app/types";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -83,6 +84,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
 import { success, z } from "zod";
+import { useUserStore } from "@/hooks/user-store";
 
 enum Role {
   admin = "admin",
@@ -124,6 +126,8 @@ const FormCreateEditUser = ({
   setSelectedEditUser,
 }: FormCreateEditUserProps) => {
   const [file, setFile] = useState<File | null>(null);
+  const setEntity = useUserStore().setEntity;
+  const router = useRouter();
 
   const queryClient = useQueryClient();
 
@@ -167,7 +171,8 @@ const FormCreateEditUser = ({
         }
       }
       await mutationEditCreate.mutateAsync(value);
-
+      setEntity("Update");
+      router.push(`/users/${value.id}`);
       setOpenCreateUser(false);
       setLoading(false);
       form.reset();
@@ -347,6 +352,8 @@ const FormCreateEditUser = ({
 };
 
 const UsersPage = () => {
+  const setEntity = useUserStore().setEntity;
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>();
   const [openModal, setOpenModal] = useState<boolean>();
@@ -452,6 +459,8 @@ const UsersPage = () => {
       setPermDelete(true);
 
       if (permDelete) {
+        setEntity("Delete");
+        router.push(`/users/${user.id}`);
         mutationDelete.mutateAsync(user);
       }
     } catch (error) {
@@ -793,6 +802,17 @@ const UsersPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
+                <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                    Role
+                  </p>
+                  <p className="text-sm text-slate-900 font-medium">
+                    {selectedUser.role}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
                 <Shield className="w-5 h-5 text-slate-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
@@ -804,14 +824,14 @@ const UsersPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <CalendarPlus className="w-5 h-5 text-slate-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Role
-                  </p>
-                  <p className="text-sm text-slate-900 font-medium">
-                    {selectedUser.role}
-                  </p>
+                  <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                    Created At
+                  </div>
+                  <div className="text-sm text-slate-900 font-medium">
+                    {dayjs(selectedUser?.createdAt).format("DD-MM-YY")}
+                  </div>
                 </div>
               </div>
               <div
@@ -833,22 +853,13 @@ const UsersPage = () => {
                   </p>
                 </div>
                 <div>
-                  {expandBio ? (
+                  {expandBio && selectedUser.bio.length > 20 ? (
                     <ChevronUp onClick={() => setExpandBio(false)} />
-                  ) : (
+                  ) : selectedUser.bio.length > 20 ? (
                     <ChevronDown onClick={() => setExpandBio(true)} />
+                  ) : (
+                    <></>
                   )}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <CalendarPlus className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Created At
-                  </div>
-                  <div className="text-sm text-slate-900 font-medium">
-                    {dayjs(selectedUser?.createdAt).format("DD-MM-YY")}
-                  </div>
                 </div>
               </div>
             </div>
