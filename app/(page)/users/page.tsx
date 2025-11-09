@@ -1,6 +1,6 @@
 "use client";
 import { User } from "@/app/types";
-import dayjs from "dayjs";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,8 +19,11 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import dayjs from "dayjs";
 import { toast } from "sonner";
 
+import { ImageUploadForm } from "@/components/file-upload";
+import { PhoneInput } from "@/components/phone-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
@@ -43,6 +46,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
+import {
   Table,
   TableBody,
   TableCell,
@@ -50,11 +62,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { handleFileSelect } from "@/hooks/handleFileSelect";
 import { useFetchData } from "@/lib/queries/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Briefcase,
+  CalendarPlus,
+  ChevronDown,
+  ChevronUp,
   Edit2Icon,
+  Fingerprint,
   Mail,
   Phone,
   PlusIcon,
@@ -63,21 +81,10 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import Image from "next/image";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
-import { z } from "zod";
-import { PhoneInput } from "@/components/phone-input";
-import { ImageUploadForm } from "@/components/file-upload";
-import { handleFileSelect } from "@/hooks/handleFileSelect";
-import { Spinner } from "@/components/ui/spinner";
+import { success, z } from "zod";
+import { useUserStore } from "@/hooks/user-store";
 
 enum Role {
   admin = "admin",
@@ -103,7 +110,6 @@ interface FormCreateEditUserProps {
   form: UseFormReturn<FormSchema>;
   loading: boolean;
   setLoading: (arg0: boolean) => void;
-  refetch: () => void;
   openCreateUser: boolean;
   setOpenCreateUser: (arg0: boolean) => void;
   selectedEditUser?: User;
@@ -114,13 +120,38 @@ const FormCreateEditUser = ({
   form,
   loading,
   setLoading,
-  refetch,
   openCreateUser,
   setOpenCreateUser,
   selectedEditUser,
   setSelectedEditUser,
 }: FormCreateEditUserProps) => {
   const [file, setFile] = useState<File | null>(null);
+  const setEntity = useUserStore().setEntity;
+  const router = useRouter();
+
+  const queryClient = useQueryClient();
+
+  const mutationEditCreate = useMutation({
+    mutationFn: async (value: FormSchema) => {
+      const res = await fetch("/api/users", {
+        method: selectedEditUser ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(value),
+      });
+      if (!res.ok) throw new Error("Failed to save user");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success(
+        `User ${selectedEditUser ? "update" : "created"} successfully`
+      );
+      // same as refetch but this can be call inside mutation if dont have refetch
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Something went wrong");
+    },
+  });
 
   const onSubmit = async (value: FormSchema) => {
     console.log(value);
@@ -139,26 +170,12 @@ const FormCreateEditUser = ({
           value = { ...value, avatar: imageUrl };
         }
       }
-
-      const res = await fetch("/api/users", {
-        method: selectedEditUser ? "PATCH" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(value),
-      });
-      console.log("res.status", res.status);
-      const data = await res.json();
-      console.log("message:", data.message);
+      await mutationEditCreate.mutateAsync(value);
+      setEntity("Update");
+      router.push(`/users/${value.id}`);
       setOpenCreateUser(false);
       setLoading(false);
-      refetch();
       form.reset();
-      toast(
-        <div className="flex w-full justify-center items-center font-bold">
-          User created successfully
-        </div>
-      );
     } catch (error) {
       console.log("error", error);
     }
@@ -324,15 +341,9 @@ const FormCreateEditUser = ({
                 </FormItem>
               )}
             />
-            {selectedEditUser ? (
-              <Button disabled={loading} type="submit">
-                {loading ? <Spinner /> : "Edit"}
-              </Button>
-            ) : (
-              <Button disabled={loading} type="submit">
-                {loading ? <Spinner /> : "Create"}
-              </Button>
-            )}
+            <Button disabled={loading} type="submit">
+              {loading ? <Spinner /> : selectedEditUser ? "Edit" : "Create"}
+            </Button>
           </form>
         </Form>
       </DialogContent>
@@ -341,20 +352,20 @@ const FormCreateEditUser = ({
 };
 
 const UsersPage = () => {
+  const setEntity = useUserStore().setEntity;
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>();
   const [openModal, setOpenModal] = useState<boolean>();
   const [openCreateUser, setOpenCreateUser] = useState<boolean>(false);
-  // const [isDeleting, setIsDeleting] = useState<boolean>();
   const [searchInput, setSearchInput] = useState<string>("");
   const [selectInput, setSelectInput] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
   const [checkboxClicked, setCheckboxClicked] = useState<string[]>([]);
-  // const [deleteOneUser, setDeleteOneUser] = useState<User>();
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedEditUser, setSelectedEditUser] = useState<User>();
   const [popoverBulkDelete, setPopoverBulkDelete] = useState<boolean>();
-  // const [openModalEditUser, setOpenModalEditUser] = useState<boolean>();
+  const [expandBio, setExpandBio] = useState<boolean>(false);
 
   const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
   const { isPending, error, data, refetch } = useFetchData(
@@ -383,6 +394,33 @@ const UsersPage = () => {
   const permDeleteRef = useRef<boolean>(true);
   const [permDelete, setPermDelete] = useState<boolean>(true);
 
+  const mutationDelete = useMutation({
+    mutationFn: async (user: FormSchema) => {
+      const res = await fetch("/api/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(user),
+      });
+      if (!res.ok) throw new Error("Failed to delete user");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success(
+        <div className="flex">
+          <div>User is removed successfully</div>
+        </div>
+      );
+      setPopoverDeleteOne(false);
+      setLoading(false);
+      setPopoverBulkDelete(false);
+      setCheckboxClicked([]);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Something went wrong");
+    },
+  });
+
   useEffect(() => {
     permDeleteRef.current = permDelete;
   }, [permDelete]);
@@ -390,7 +428,7 @@ const UsersPage = () => {
   const handleDeleteUser = async (user: string[] | string) => {
     setPermDelete(true);
 
-    toast(
+    toast.info(
       <div className="flex items-center w-full justify-between gap-3 text-sm">
         <span className="text-foreground">Removing selected user...</span>
         <Button
@@ -413,7 +451,7 @@ const UsersPage = () => {
       await new Promise((resolve) => setTimeout(resolve, 5000));
 
       if (!permDeleteRef.current) {
-        toast("Successfully undone");
+        toast.success("Successfully undone");
         setCheckboxClicked([]);
         setLoading(false);
         return;
@@ -421,35 +459,9 @@ const UsersPage = () => {
       setPermDelete(true);
 
       if (permDelete) {
-        try {
-          setLoading(true);
-          const res = await fetch("/api/users", {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(user),
-          });
-          const data = await res.json();
-
-          if (res.ok) {
-            console.log("User deleted successfully!");
-          } else {
-            console.error("Error deleting user:", data.message);
-          }
-          toast(
-            <div className="flex">
-              <div>User is removed successfully</div>
-            </div>
-          );
-          setPopoverDeleteOne(false);
-          setLoading(false);
-          setPopoverBulkDelete(false);
-          setCheckboxClicked([]);
-          refetch();
-        } catch (error) {
-          console.log("error", error);
-        }
+        setEntity("Delete");
+        router.push(`/users/${user.id}`);
+        mutationDelete.mutateAsync(user);
       }
     } catch (error) {
       console.log("error", error);
@@ -457,7 +469,6 @@ const UsersPage = () => {
   };
 
   const handleCheckboxClick = (user: User, checked: boolean) => {
-    console.log("user123", user);
     // @ts-expect-error:no care
     setCheckboxClicked((prev) => {
       if (checked) {
@@ -727,7 +738,6 @@ const UsersPage = () => {
         form={form}
         loading={loading}
         setLoading={setLoading}
-        refetch={refetch}
         openCreateUser={openCreateUser}
         setOpenCreateUser={setOpenCreateUser}
         selectedEditUser={selectedEditUser}
@@ -735,7 +745,7 @@ const UsersPage = () => {
       />
       <Dialog open={openModal} onOpenChange={setOpenModal}>
         <DialogTrigger asChild></DialogTrigger>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-xl max-h-[600px] overflow-auto">
           <DialogHeader className="lg:space-y-3">
             <DialogTitle className="lg:text-2xl">User Details</DialogTitle>
             <DialogDescription>
@@ -743,7 +753,7 @@ const UsersPage = () => {
             </DialogDescription>
           </DialogHeader>
           {selectedUser && (
-            <div className="lg:mt-6 space-y-4">
+            <div className="lg:mt-6 space-y-4 truncate">
               {selectedUser.avatar ? (
                 <Image
                   src={
@@ -792,17 +802,6 @@ const UsersPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Shield className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Status
-                  </p>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {selectedUser.active ? "Active" : "Not Active"}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
                 <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
@@ -814,18 +813,18 @@ const UsersPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <Shield className="w-5 h-5 text-slate-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Bio
+                    Status
                   </p>
-                  <p className="text-sm text-slate-900 font-medium">
-                    {selectedUser.bio}
-                  </p>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {selectedUser.active ? "Active" : "Not Active"}
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <CalendarPlus className="w-5 h-5 text-slate-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">
                     Created At
@@ -833,6 +832,34 @@ const UsersPage = () => {
                   <div className="text-sm text-slate-900 font-medium">
                     {dayjs(selectedUser?.createdAt).format("DD-MM-YY")}
                   </div>
+                </div>
+              </div>
+              <div
+                className={`flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors ${
+                  expandBio ? "h-50" : ""
+                }`}
+              >
+                <Fingerprint className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                    Bio
+                  </p>
+                  <p
+                    className={`text-sm text-slate-900 font-medium ${
+                      expandBio ? "text-wrap" : "truncate"
+                    }`}
+                  >
+                    {selectedUser.bio}
+                  </p>
+                </div>
+                <div>
+                  {expandBio && selectedUser.bio.length > 20 ? (
+                    <ChevronUp onClick={() => setExpandBio(false)} />
+                  ) : selectedUser.bio.length > 20 ? (
+                    <ChevronDown onClick={() => setExpandBio(true)} />
+                  ) : (
+                    <></>
+                  )}
                 </div>
               </div>
             </div>
