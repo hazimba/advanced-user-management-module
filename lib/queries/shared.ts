@@ -4,8 +4,8 @@ export const useFetchData = (
   entity: string,
   page: number,
   limit: number,
-  search: string,
-  selectInput: string
+  search: string | null,
+  selectInput: string | null
 ) => {
   const { isPending, error, data, refetch } = useQuery({
     queryKey: [entity, page, search, selectInput],

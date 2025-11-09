@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useQuery } from "@tanstack/react-query";
+import { useFetchData } from "@/lib/queries/shared";
 import { CornerDownLeft, Trash } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,16 +19,14 @@ import { toast } from "sonner";
 const PermissionPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [recoverLoading, setRecoverLoading] = useState<boolean>(false);
-  const { isPending, refetch, data } = useQuery({
-    queryKey: ["deletedUser"],
-    queryFn: async () => {
-      const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
-      const res = await fetch(url);
-      const data = await res.json();
 
-      return data;
-    },
-  });
+  const { isPending, refetch, data } = useFetchData(
+    "deletedUser",
+    1,
+    10,
+    "",
+    ""
+  );
 
   const handleRecoverAll = async (data: User[]) => {
     try {

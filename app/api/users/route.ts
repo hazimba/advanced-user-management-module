@@ -122,14 +122,14 @@ export async function PATCH(request: Request) {
   }
 }
 
-export async function GET() {
-  try {
-    const users = await fetch(
-      `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`
-    );
+// export async function GET() {
+//   try {
+//     const users = await fetch(
+//       `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`
+//     );
 
-    return NextResponse.json(users);
-  } catch (error) {
-    console.log("error", error);
-  }
-}
+//     return NextResponse.json(users);
+//   } catch (error) {
+//     console.log("error", error);
+//   }
+// }

@@ -1,6 +1,5 @@
 "use client";
 import { User } from "@/app/types";
-import dayjs from "dayjs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,8 +18,11 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import dayjs from "dayjs";
 import { toast } from "sonner";
 
+import { ImageUploadForm } from "@/components/file-upload";
+import { PhoneInput } from "@/components/phone-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
@@ -43,6 +45,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
+import {
   Table,
   TableBody,
   TableCell,
@@ -50,8 +61,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { handleFileSelect } from "@/hooks/handleFileSelect";
 import { useFetchData } from "@/lib/queries/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Briefcase,
   Edit2Icon,
@@ -63,21 +76,9 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import Image from "next/image";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
-import { PhoneInput } from "@/components/phone-input";
-import { ImageUploadForm } from "@/components/file-upload";
-import { handleFileSelect } from "@/hooks/handleFileSelect";
-import { Spinner } from "@/components/ui/spinner";
 
 enum Role {
   admin = "admin",
@@ -103,7 +104,6 @@ interface FormCreateEditUserProps {
   form: UseFormReturn<FormSchema>;
   loading: boolean;
   setLoading: (arg0: boolean) => void;
-  refetch: () => void;
   openCreateUser: boolean;
   setOpenCreateUser: (arg0: boolean) => void;
   selectedEditUser?: User;
@@ -114,13 +114,34 @@ const FormCreateEditUser = ({
   form,
   loading,
   setLoading,
-  refetch,
   openCreateUser,
   setOpenCreateUser,
   selectedEditUser,
   setSelectedEditUser,
 }: FormCreateEditUserProps) => {
   const [file, setFile] = useState<File | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const mutationEditCreate = useMutation({
+    mutationFn: async (value: FormSchema) => {
+      const res = await fetch("/api/users", {
+        method: selectedEditUser ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(value),
+      });
+      if (!res.ok) throw new Error("Failed to save user");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast(`User ${selectedEditUser ? "update" : "created"} successfully`);
+      // same as refetch but this can be call inside mutation if dont have refetch
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Something went wrong");
+    },
+  });
 
   const onSubmit = async (value: FormSchema) => {
     console.log(value);
@@ -139,26 +160,11 @@ const FormCreateEditUser = ({
           value = { ...value, avatar: imageUrl };
         }
       }
+      await mutationEditCreate.mutateAsync(value);
 
-      const res = await fetch("/api/users", {
-        method: selectedEditUser ? "PATCH" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(value),
-      });
-      console.log("res.status", res.status);
-      const data = await res.json();
-      console.log("message:", data.message);
       setOpenCreateUser(false);
       setLoading(false);
-      refetch();
       form.reset();
-      toast(
-        <div className="flex w-full justify-center items-center font-bold">
-          User created successfully
-        </div>
-      );
     } catch (error) {
       console.log("error", error);
     }
@@ -324,15 +330,9 @@ const FormCreateEditUser = ({
                 </FormItem>
               )}
             />
-            {selectedEditUser ? (
-              <Button disabled={loading} type="submit">
-                {loading ? <Spinner /> : "Edit"}
-              </Button>
-            ) : (
-              <Button disabled={loading} type="submit">
-                {loading ? <Spinner /> : "Create"}
-              </Button>
-            )}
+            <Button disabled={loading} type="submit">
+              {loading ? <Spinner /> : selectedEditUser ? "Edit" : "Create"}
+            </Button>
           </form>
         </Form>
       </DialogContent>
@@ -383,6 +383,33 @@ const UsersPage = () => {
   const permDeleteRef = useRef<boolean>(true);
   const [permDelete, setPermDelete] = useState<boolean>(true);
 
+  const mutationDelete = useMutation({
+    mutationFn: async (user: FormSchema) => {
+      const res = await fetch("/api/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(user),
+      });
+      if (!res.ok) throw new Error("Failed to delete user");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast(
+        <div className="flex">
+          <div>User is removed successfully</div>
+        </div>
+      );
+      setPopoverDeleteOne(false);
+      setLoading(false);
+      setPopoverBulkDelete(false);
+      setCheckboxClicked([]);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Something went wrong");
+    },
+  });
+
   useEffect(() => {
     permDeleteRef.current = permDelete;
   }, [permDelete]);
@@ -421,35 +448,7 @@ const UsersPage = () => {
       setPermDelete(true);
 
       if (permDelete) {
-        try {
-          setLoading(true);
-          const res = await fetch("/api/users", {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(user),
-          });
-          const data = await res.json();
-
-          if (res.ok) {
-            console.log("User deleted successfully!");
-          } else {
-            console.error("Error deleting user:", data.message);
-          }
-          toast(
-            <div className="flex">
-              <div>User is removed successfully</div>
-            </div>
-          );
-          setPopoverDeleteOne(false);
-          setLoading(false);
-          setPopoverBulkDelete(false);
-          setCheckboxClicked([]);
-          refetch();
-        } catch (error) {
-          console.log("error", error);
-        }
+        mutationDelete.mutateAsync(user);
       }
     } catch (error) {
       console.log("error", error);
@@ -727,7 +726,6 @@ const UsersPage = () => {
         form={form}
         loading={loading}
         setLoading={setLoading}
-        refetch={refetch}
         openCreateUser={openCreateUser}
         setOpenCreateUser={setOpenCreateUser}
         selectedEditUser={selectedEditUser}
