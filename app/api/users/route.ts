@@ -1,4 +1,5 @@
 // import { User } from "@/app/types";
+import dayjs from "dayjs";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         ...user,
         uuid: uuidv4(),
-        createdAt: Date.now(),
+        createdAt: dayjs(Date.now()).format("DD-MM-YYYY"),
       }),
     });
 
@@ -90,7 +91,7 @@ export async function PATCH(request: Request) {
   try {
     const user = await request.json();
 
-    const { id, ...updateData } = user;
+    const { id } = user;
     const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${id}`;
 
     const res = await fetch(url, {

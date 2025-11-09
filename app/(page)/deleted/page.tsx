@@ -6,7 +6,6 @@ import {
   TableBody,
   TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -82,6 +81,7 @@ const PermissionPage = () => {
       toast.error("No data to recover");
     } else {
       setRecoverLoading(true);
+      // @ts-expect-error:nocare
       await mutation.mutateAsync(data);
     }
   };
@@ -126,7 +126,7 @@ const PermissionPage = () => {
         <TableBody>
           {data?.length > 0 ? (
             <>
-              {data?.map((du: User, index) => (
+              {data?.map((du: User, index: number) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">{du.name}</TableCell>
                   <TableCell>{du.phoneNumber}</TableCell>
@@ -136,6 +136,7 @@ const PermissionPage = () => {
                       className="cursor-pointer"
                       size={"15"}
                       onClick={async () => {
+                        // @ts-expect-error:nocare
                         await mutationDelPerm.mutateAsync(du);
                       }}
                     />
