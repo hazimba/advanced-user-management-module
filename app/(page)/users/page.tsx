@@ -67,7 +67,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Briefcase,
+  CalendarPlus,
+  ChevronDown,
+  ChevronUp,
   Edit2Icon,
+  Fingerprint,
   Mail,
   Phone,
   PlusIcon,
@@ -78,7 +82,7 @@ import {
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
-import { z } from "zod";
+import { success, z } from "zod";
 
 enum Role {
   admin = "admin",
@@ -134,7 +138,9 @@ const FormCreateEditUser = ({
       return res.json();
     },
     onSuccess: () => {
-      toast(`User ${selectedEditUser ? "update" : "created"} successfully`);
+      toast.success(
+        `User ${selectedEditUser ? "update" : "created"} successfully`
+      );
       // same as refetch but this can be call inside mutation if dont have refetch
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
@@ -345,16 +351,14 @@ const UsersPage = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>();
   const [openModal, setOpenModal] = useState<boolean>();
   const [openCreateUser, setOpenCreateUser] = useState<boolean>(false);
-  // const [isDeleting, setIsDeleting] = useState<boolean>();
   const [searchInput, setSearchInput] = useState<string>("");
   const [selectInput, setSelectInput] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
   const [checkboxClicked, setCheckboxClicked] = useState<string[]>([]);
-  // const [deleteOneUser, setDeleteOneUser] = useState<User>();
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedEditUser, setSelectedEditUser] = useState<User>();
   const [popoverBulkDelete, setPopoverBulkDelete] = useState<boolean>();
-  // const [openModalEditUser, setOpenModalEditUser] = useState<boolean>();
+  const [expandBio, setExpandBio] = useState<boolean>(false);
 
   const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
   const { isPending, error, data, refetch } = useFetchData(
@@ -394,7 +398,7 @@ const UsersPage = () => {
       return res.json();
     },
     onSuccess: () => {
-      toast(
+      toast.success(
         <div className="flex">
           <div>User is removed successfully</div>
         </div>
@@ -417,7 +421,7 @@ const UsersPage = () => {
   const handleDeleteUser = async (user: string[] | string) => {
     setPermDelete(true);
 
-    toast(
+    toast.info(
       <div className="flex items-center w-full justify-between gap-3 text-sm">
         <span className="text-foreground">Removing selected user...</span>
         <Button
@@ -440,7 +444,7 @@ const UsersPage = () => {
       await new Promise((resolve) => setTimeout(resolve, 5000));
 
       if (!permDeleteRef.current) {
-        toast("Successfully undone");
+        toast.success("Successfully undone");
         setCheckboxClicked([]);
         setLoading(false);
         return;
@@ -456,7 +460,6 @@ const UsersPage = () => {
   };
 
   const handleCheckboxClick = (user: User, checked: boolean) => {
-    console.log("user123", user);
     // @ts-expect-error:no care
     setCheckboxClicked((prev) => {
       if (checked) {
@@ -733,7 +736,7 @@ const UsersPage = () => {
       />
       <Dialog open={openModal} onOpenChange={setOpenModal}>
         <DialogTrigger asChild></DialogTrigger>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-xl max-h-[600px] overflow-auto">
           <DialogHeader className="lg:space-y-3">
             <DialogTitle className="lg:text-2xl">User Details</DialogTitle>
             <DialogDescription>
@@ -741,7 +744,7 @@ const UsersPage = () => {
             </DialogDescription>
           </DialogHeader>
           {selectedUser && (
-            <div className="lg:mt-6 space-y-4">
+            <div className="lg:mt-6 space-y-4 truncate">
               {selectedUser.avatar ? (
                 <Image
                   src={
@@ -811,19 +814,34 @@ const UsersPage = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
+              <div
+                className={`flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors ${
+                  expandBio ? "h-50" : ""
+                }`}
+              >
+                <Fingerprint className="w-5 h-5 text-slate-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
                     Bio
                   </p>
-                  <p className="text-sm text-slate-900 font-medium">
+                  <p
+                    className={`text-sm text-slate-900 font-medium ${
+                      expandBio ? "text-wrap" : "truncate"
+                    }`}
+                  >
                     {selectedUser.bio}
                   </p>
                 </div>
+                <div>
+                  {expandBio ? (
+                    <ChevronUp onClick={() => setExpandBio(false)} />
+                  ) : (
+                    <ChevronDown onClick={() => setExpandBio(true)} />
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                <CalendarPlus className="w-5 h-5 text-slate-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">
                     Created At
