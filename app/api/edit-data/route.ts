@@ -3,7 +3,6 @@ import { generatePhoneNumber } from "phone-number-generator-js";
 
 export async function PATCH(request: Request) {
   const data = await request.json();
-  console.log("data", data);
   try {
     const roles = ["admin", "user", "guest"];
     const active = ["active", "inactive"];

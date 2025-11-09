@@ -37,10 +37,14 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const data = await request.json();
-    console.log("data", data);
     const id = data.id;
 
-    console.log("data123", data);
+    console.log("dat111a", data);
+    if (data.length < 1)
+      return NextResponse.json(
+        { message: "No data to recover" },
+        { status: 400 }
+      );
 
     if (Array.isArray(data)) {
       for (const dt of data) {

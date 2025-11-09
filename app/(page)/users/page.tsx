@@ -170,9 +170,6 @@ const FormCreateEditUser = ({
   });
 
   const onSubmit = async (value: FormSchema) => {
-    console.log(value);
-    console.log("file", file);
-
     try {
       setLoading(true);
 
@@ -193,7 +190,7 @@ const FormCreateEditUser = ({
       setLoading(false);
       form.reset({});
     } catch (error) {
-      console.log("error", error);
+      console.error("error", error);
     }
   };
 
@@ -258,7 +255,6 @@ const FormCreateEditUser = ({
               control={form.control}
               name="avatar"
               render={({ field }) => {
-                console.log("field", field);
                 return (
                   <FormItem>
                     <FormLabel>Avatar</FormLabel>
@@ -415,8 +411,6 @@ const UsersPage = () => {
     },
   });
 
-  console.log("data123", data);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -483,7 +477,6 @@ const UsersPage = () => {
           size="sm"
           className="h-6 px-2 py-1 text-xs"
           onClick={() => {
-            console.log("click");
             return setPermDelete(false);
           }}
         >
@@ -498,7 +491,7 @@ const UsersPage = () => {
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
       if (!permDeleteRef.current) {
-        toast.success("Successfully undone");
+        toast.success("Successfully not proceed to delete");
         setCheckboxClicked([]);
         setLoading(false);
         return;
@@ -510,7 +503,7 @@ const UsersPage = () => {
         mutationDelete.mutateAsync(user);
       }
     } catch (error) {
-      console.log("error", error);
+      console.error("error", error);
     }
   };
 
@@ -685,7 +678,6 @@ const UsersPage = () => {
                   <Button
                     variant="destructive"
                     onClick={() => {
-                      console.log("delete", checkboxClicked);
                       handleDeleteUser(checkboxClicked);
                       setPopoverBulkDelete(false);
                     }}

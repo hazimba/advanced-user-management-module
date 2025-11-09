@@ -31,7 +31,35 @@ const PermissionPage = () => {
       return res.json();
     },
   });
-  console.log("data12344", data);
+
+  const mutationDelPerm = useMutation({
+    mutationFn: async (data: FormSchema) => {
+      const res = await fetch("/api/delete-perm", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const json = await res.json();
+
+      console.log("json", json);
+
+      if (!res.ok) {
+        throw new Error(json.message || "Error occured");
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deletedUser"] });
+      toast.success("Success delete permanently");
+      setLoading(false);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      setLoading(false);
+    },
+  });
 
   const mutation = useMutation({
     mutationFn: async (data: FormSchema) => {
@@ -40,7 +68,13 @@ const PermissionPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Error recover user");
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        setRecoverLoading(false);
+        throw new Error(json.message || "Error occured");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -74,21 +108,8 @@ const PermissionPage = () => {
           className="cursor-pointer"
           variant="destructive"
           onClick={async () => {
-            try {
-              setLoading(true);
-              await fetch("/api/delete-perm", {
-                method: "DELETE",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
-              });
-              setLoading(false);
-              refetch();
-              toast(`User is delete permenantly`);
-            } catch (error) {
-              console.error("error", error);
-            }
+            setLoading(true);
+            await mutationDelPerm.mutateAsync(data);
           }}
         >
           {loading ? "Deleting..." : "Delete All"}
@@ -117,21 +138,7 @@ const PermissionPage = () => {
                       className="cursor-pointer"
                       size={"15"}
                       onClick={async () => {
-                        try {
-                          const res = await fetch("/api/deleted", {
-                            method: "DELETE",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify(du),
-                          });
-                          if (!res.ok) throw new Error("Error recover user");
-
-                          refetch();
-                          toast("Selected user recovered");
-                        } catch (error) {
-                          console.error("error", error);
-                        }
+                        await mutationDelPerm.mutateAsync(du);
                       }}
                     />
                     <Trash

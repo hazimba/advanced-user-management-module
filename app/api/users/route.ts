@@ -61,7 +61,6 @@ export async function DELETE(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await request.json();
-    console.log("user", user);
 
     const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
     const res = await fetch(url, {
@@ -93,7 +92,6 @@ export async function PATCH(request: Request) {
 
     const { id, ...updateData } = user;
     const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${id}`;
-    console.log("Updating user with ID:", id, "with data:", updateData);
 
     const res = await fetch(url, {
       method: "PATCH",
