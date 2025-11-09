@@ -1,7 +1,6 @@
 "use client";
 import { User } from "@/app/types";
 import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -12,8 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useFetchData } from "@/lib/queries/shared";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CornerDownLeft, Trash } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -24,13 +22,16 @@ const PermissionPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [recoverLoading, setRecoverLoading] = useState<boolean>(false);
 
-  const { isPending, refetch, data } = useFetchData(
-    "deletedUser",
-    1,
-    20,
-    "",
-    ""
-  );
+  const { isPending, refetch, data } = useQuery({
+    queryKey: ["deletedUser"],
+    queryFn: async () => {
+      const res = await fetch("/api/deleted");
+      if (!res.ok) throw new Error("Unable to get deleteduser");
+
+      return res.json();
+    },
+  });
+  console.log("data12344", data);
 
   const mutation = useMutation({
     mutationFn: async (data: FormSchema) => {

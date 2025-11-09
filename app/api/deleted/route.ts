@@ -1,5 +1,18 @@
-import { User } from "@/app/types";
 import { NextResponse } from "next/server";
+
+export async function GET() {
+  try {
+    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+    const res = await fetch(url);
+
+    if (!res.ok) throw new Error("Error");
+    const data = await res.json();
+
+    return Response.json(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
 
 export async function POST(request: Request) {
   try {
