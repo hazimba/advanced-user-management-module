@@ -61,7 +61,6 @@ export async function DELETE(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await request.json();
-    console.log("user", user);
 
     const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
     const res = await fetch(url, {
@@ -93,7 +92,6 @@ export async function PATCH(request: Request) {
 
     const { id, ...updateData } = user;
     const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${id}`;
-    console.log("Updating user with ID:", id, "with data:", updateData);
 
     const res = await fetch(url, {
       method: "PATCH",
@@ -117,7 +115,7 @@ export async function PATCH(request: Request) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = searchParams.get("page") || "1";
-  const search = searchParams.get("search");
+  const search = searchParams.get("name");
   const limit = searchParams.get("limit") || "14";
   const role = searchParams.get("role");
 
@@ -133,5 +131,5 @@ export async function GET(request: Request) {
   const res = await fetch(url);
   const data = await res.json();
 
-  return Response.json(data);
+  return Response.json(data || []);
 }

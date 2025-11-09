@@ -43,10 +43,7 @@ export async function handleFileSelect<T extends FieldValues>(
       .from("user-image")
       .getPublicUrl(`images/${entity}/${fileName}`);
 
-    console.log("Public URL:", publicUrl);
     return publicUrl;
-
-    console.log("File uploaded successfully:", data);
   } catch (error) {
     console.error("Error uploading file:", error);
   }

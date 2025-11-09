@@ -37,10 +37,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const data = await request.json();
-    console.log("data", data);
     const id = data.id;
-
-    console.log("data123", data);
 
     if (Array.isArray(data)) {
       for (const dt of data) {

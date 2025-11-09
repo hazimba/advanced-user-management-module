@@ -22,7 +22,6 @@ const IdPage = () => {
     },
     enabled: !!id,
   });
-  console.log("data", data);
 
   return (
     <div className="w-screen text-wrap px-4 flex flex-col gap-10">

@@ -31,7 +31,31 @@ const PermissionPage = () => {
       return res.json();
     },
   });
-  console.log("data12344", data);
+
+  const mutationDelPerm = useMutation({
+    mutationFn: async (data: FormSchema) => {
+      const res = await fetch("/api/delete-perm", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        throw new Error("Error occured");
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deletedUser"] });
+      toast.success("Success delete permanently");
+      setLoading(false);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      setLoading(false);
+    },
+  });
 
   const mutation = useMutation({
     mutationFn: async (data: FormSchema) => {
@@ -40,7 +64,7 @@ const PermissionPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Error recover user");
+
       return res.json();
     },
     onSuccess: () => {
@@ -54,8 +78,12 @@ const PermissionPage = () => {
   });
 
   const handleRecoverAll = async (data: User[]) => {
-    setRecoverLoading(true);
-    await mutation.mutateAsync(data);
+    if (data?.length < 1) {
+      toast.error("No data to recover");
+    } else {
+      setRecoverLoading(true);
+      await mutation.mutateAsync(data);
+    }
   };
 
   return (
@@ -74,20 +102,11 @@ const PermissionPage = () => {
           className="cursor-pointer"
           variant="destructive"
           onClick={async () => {
-            try {
+            if (data?.length < 1) {
+              return toast.error("No data to delete pemanently");
+            } else {
               setLoading(true);
-              await fetch("/api/delete-perm", {
-                method: "DELETE",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
-              });
-              setLoading(false);
-              refetch();
-              toast(`User is delete permenantly`);
-            } catch (error) {
-              console.error("error", error);
+              await mutationDelPerm.mutateAsync(data);
             }
           }}
         >
@@ -105,7 +124,7 @@ const PermissionPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {!isPending ? (
+          {data?.length > 0 ? (
             <>
               {data?.map((du: User, index) => (
                 <TableRow key={index}>
@@ -117,21 +136,7 @@ const PermissionPage = () => {
                       className="cursor-pointer"
                       size={"15"}
                       onClick={async () => {
-                        try {
-                          const res = await fetch("/api/deleted", {
-                            method: "DELETE",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify(du),
-                          });
-                          if (!res.ok) throw new Error("Error recover user");
-
-                          refetch();
-                          toast("Selected user recovered");
-                        } catch (error) {
-                          console.error("error", error);
-                        }
+                        await mutationDelPerm.mutateAsync(du);
                       }}
                     />
                     <Trash
@@ -157,17 +162,20 @@ const PermissionPage = () => {
                 </TableRow>
               ))}
             </>
-          ) : (
+          ) : isPending ? (
             <TableRow>
               <TableCell colSpan={3} className="text-center">
                 Loading...
               </TableCell>
             </TableRow>
+          ) : (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center">
+                No data to display
+              </TableCell>
+            </TableRow>
           )}
         </TableBody>
-        <TableFooter>
-          <TableRow></TableRow>
-        </TableFooter>
       </Table>
     </div>
   );
