@@ -57,6 +57,7 @@ import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -401,13 +402,14 @@ const UsersPage = () => {
         limit: "14",
       });
 
-      if (debouncedSearch) params.append("search", debouncedSearch);
+      if (debouncedSearch) params.append("name", debouncedSearch);
       if (selectInput) params.append("role", selectInput);
 
       const res = await fetch(`/api/users?${params.toString()}`);
       if (!res.ok) throw new Error("Unable to fetch data");
 
-      return res.json();
+      const json = await res.json();
+      return Array.isArray(json) ? json : [];
     },
   });
 
@@ -562,19 +564,20 @@ const UsersPage = () => {
   if (error) return <p>Error loading data</p>;
 
   return (
-    <div className="p-4 gap-3 flex flex-col">
+    <div className="p-4 gap-3 flex flex-col ">
       <div className="flex items-center justify-between">
-        <div className="flex gap-2 flex-col justify-start md:flex-row items-center">
+        <div className="flex gap-2 flex-col justify-start md:flex-row">
           <Input
-            className="w-60"
+            className="w-50"
             onChange={(e) => setSearchInput(e.target.value)}
+            value={searchInput}
             placeholder="Search user..."
           />
           <Select
             onValueChange={(value) => setSelectInput(value)}
             value={selectInput}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-50">
               <SelectValue placeholder="Select a role..." />
             </SelectTrigger>
             <SelectContent>
@@ -588,6 +591,7 @@ const UsersPage = () => {
           <div className="flex w-full items-center gap-4">
             <Button
               onClick={() => {
+                setDebouncedSearch("");
                 setSearchInput("");
                 setSelectInput("");
               }}
@@ -598,7 +602,11 @@ const UsersPage = () => {
               <DatabaseZap
                 className="cursor-pointer"
                 onClick={() => {
-                  handleDataRefresh(data);
+                  if (data?.length < 1) {
+                    toast.error("No data available to mutate, kindly add one");
+                  } else {
+                    handleDataRefresh(data);
+                  }
                 }}
               />
             ) : (
@@ -636,6 +644,7 @@ const UsersPage = () => {
         </NavigationMenu>
       </div>
       <Table>
+        <TableCaption>A list of users.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="flex items-center gap-3">
@@ -693,7 +702,7 @@ const UsersPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody className={isPending ? `` : ``}>
-          {data ? (
+          {data?.length > 0 && !isPending ? (
             data?.map((user: User, index) => (
               <TableRow
                 className="w-screen"

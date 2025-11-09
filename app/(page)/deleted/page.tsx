@@ -40,12 +40,8 @@ const PermissionPage = () => {
         body: JSON.stringify(data),
       });
 
-      const json = await res.json();
-
-      console.log("json", json);
-
       if (!res.ok) {
-        throw new Error(json.message || "Error occured");
+        throw new Error("Error occured");
       }
 
       return res.json();
@@ -69,12 +65,6 @@ const PermissionPage = () => {
         body: JSON.stringify(data),
       });
 
-      const json = await res.json();
-
-      if (!res.ok) {
-        setRecoverLoading(false);
-        throw new Error(json.message || "Error occured");
-      }
       return res.json();
     },
     onSuccess: () => {
@@ -88,8 +78,12 @@ const PermissionPage = () => {
   });
 
   const handleRecoverAll = async (data: User[]) => {
-    setRecoverLoading(true);
-    await mutation.mutateAsync(data);
+    if (data?.length < 1) {
+      toast.error("No data to recover");
+    } else {
+      setRecoverLoading(true);
+      await mutation.mutateAsync(data);
+    }
   };
 
   return (
@@ -108,8 +102,12 @@ const PermissionPage = () => {
           className="cursor-pointer"
           variant="destructive"
           onClick={async () => {
-            setLoading(true);
-            await mutationDelPerm.mutateAsync(data);
+            if (data?.length < 1) {
+              return toast.error("No data to delete pemanently");
+            } else {
+              setLoading(true);
+              await mutationDelPerm.mutateAsync(data);
+            }
           }}
         >
           {loading ? "Deleting..." : "Delete All"}
@@ -126,7 +124,7 @@ const PermissionPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {!isPending ? (
+          {data?.length > 0 ? (
             <>
               {data?.map((du: User, index) => (
                 <TableRow key={index}>
@@ -164,17 +162,20 @@ const PermissionPage = () => {
                 </TableRow>
               ))}
             </>
-          ) : (
+          ) : isPending ? (
             <TableRow>
               <TableCell colSpan={3} className="text-center">
                 Loading...
               </TableCell>
             </TableRow>
+          ) : (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center">
+                No data to display
+              </TableCell>
+            </TableRow>
           )}
         </TableBody>
-        <TableFooter>
-          <TableRow></TableRow>
-        </TableFooter>
       </Table>
     </div>
   );

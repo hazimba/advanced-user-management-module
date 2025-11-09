@@ -115,7 +115,7 @@ export async function PATCH(request: Request) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = searchParams.get("page") || "1";
-  const search = searchParams.get("search");
+  const search = searchParams.get("name");
   const limit = searchParams.get("limit") || "14";
   const role = searchParams.get("role");
 
@@ -131,5 +131,5 @@ export async function GET(request: Request) {
   const res = await fetch(url);
   const data = await res.json();
 
-  return Response.json(data);
+  return Response.json(data || []);
 }

@@ -39,13 +39,6 @@ export async function DELETE(request: Request) {
     const data = await request.json();
     const id = data.id;
 
-    console.log("dat111a", data);
-    if (data.length < 1)
-      return NextResponse.json(
-        { message: "No data to recover" },
-        { status: 400 }
-      );
-
     if (Array.isArray(data)) {
       for (const dt of data) {
         const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser/${dt.id}`;
