@@ -71,7 +71,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { PhoneInput } from "@/components/phone-input";
@@ -380,35 +380,77 @@ const UsersPage = () => {
     },
   });
 
-  const handleDeleteUser = async (user: string | string[]) => {
+  const permDeleteRef = useRef<boolean>(true);
+  const [permDelete, setPermDelete] = useState<boolean>(true);
+
+  useEffect(() => {
+    permDeleteRef.current = permDelete;
+  }, [permDelete]);
+
+  const handleDeleteUser = async (user: string[] | string) => {
+    setPermDelete(true);
+
+    toast(
+      <div className="flex items-center w-full justify-between gap-3 text-sm">
+        <span className="text-foreground">Removing selected user...</span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-6 px-2 py-1 text-xs"
+          onClick={() => {
+            console.log("click");
+            return setPermDelete(false);
+          }}
+        >
+          Undo
+        </Button>
+      </div>,
+      { duration: 5000 }
+    );
+
     try {
       setLoading(true);
-      const res = await fetch("/api/users", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(user),
-      });
-      const data = await res.json();
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
-      if (res.ok) {
-        console.log("User deleted successfully!");
-      } else {
-        console.error("Error deleting user:", data.message);
+      if (!permDeleteRef.current) {
+        toast("Successfully undone");
+        setCheckboxClicked([]);
+        setLoading(false);
+        return;
       }
+      setPermDelete(true);
 
-      setPopoverDeleteOne(false);
-      toast(
-        <div className="flex">
-          <div>User is removed successfully</div>
-          <Button>Undo Delete</Button>
-        </div>
-      );
-      setLoading(false);
-      setPopoverBulkDelete(false);
-      setCheckboxClicked([]);
-      refetch();
+      if (permDelete) {
+        try {
+          setLoading(true);
+          const res = await fetch("/api/users", {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(user),
+          });
+          const data = await res.json();
+
+          if (res.ok) {
+            console.log("User deleted successfully!");
+          } else {
+            console.error("Error deleting user:", data.message);
+          }
+          toast(
+            <div className="flex">
+              <div>User is removed successfully</div>
+            </div>
+          );
+          setPopoverDeleteOne(false);
+          setLoading(false);
+          setPopoverBulkDelete(false);
+          setCheckboxClicked([]);
+          refetch();
+        } catch (error) {
+          console.log("error", error);
+        }
+      }
     } catch (error) {
       console.log("error", error);
     }
