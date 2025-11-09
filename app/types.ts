@@ -8,4 +8,5 @@ export type User = {
   role: string;
   email: string;
   createdAt: any;
+  uuid: string;
 };

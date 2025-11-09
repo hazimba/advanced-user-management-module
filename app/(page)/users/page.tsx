@@ -1,6 +1,5 @@
 "use client";
 import { User } from "@/app/types";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +19,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import dayjs from "dayjs";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { ImageUploadForm } from "@/components/file-upload";
@@ -63,6 +63,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { handleFileSelect } from "@/hooks/handleFileSelect";
+import { useUserStore } from "@/hooks/user-store";
 import { useFetchData } from "@/lib/queries/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -71,6 +72,7 @@ import {
   CalendarPlus,
   ChevronDown,
   ChevronUp,
+  DatabaseZap,
   Edit2Icon,
   Fingerprint,
   Mail,
@@ -83,8 +85,7 @@ import {
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
-import { success, z } from "zod";
-import { useUserStore } from "@/hooks/user-store";
+import { z } from "zod";
 
 enum Role {
   admin = "admin",
@@ -93,6 +94,7 @@ enum Role {
 }
 
 const formSchema = z.object({
+  uuid: z.any(),
   name: z.string().optional(), // .min(2, "min 2 char").max(50),
   avatar: z.string().optional(),
   phoneNumber: z.string().optional(),
@@ -138,7 +140,7 @@ const FormCreateEditUser = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(value),
       });
-      if (!res.ok) throw new Error("Failed to save user");
+      if (!res.ok) throw new Error("Failed to save user, user not found");
       return res.json();
     },
     onSuccess: () => {
@@ -149,7 +151,22 @@ const FormCreateEditUser = ({
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (error) => {
-      toast.error(error.message || "Something went wrong");
+      toast.error(error.message);
+      // setOpenCreateUser(false);
+      setSelectedEditUser(undefined);
+      setLoading(false);
+      form.reset({
+        name: "",
+        active: "",
+        avatar: "",
+        phoneNumber: "",
+        email: "",
+        role: undefined,
+        bio: "",
+        id: "",
+        createdAt: "",
+      });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 
@@ -175,7 +192,7 @@ const FormCreateEditUser = ({
       router.push(`/users/${value.id}`);
       setOpenCreateUser(false);
       setLoading(false);
-      form.reset();
+      form.reset({});
     } catch (error) {
       console.log("error", error);
     }
@@ -215,6 +232,19 @@ const FormCreateEditUser = ({
             <FormField
               control={form.control}
               name="id"
+              render={({ field }) => (
+                <FormItem className="hidden">
+                  <FormLabel>id</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter id..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="uuid"
               render={({ field }) => (
                 <FormItem className="hidden">
                   <FormLabel>id</FormLabel>
@@ -352,8 +382,8 @@ const FormCreateEditUser = ({
 };
 
 const UsersPage = () => {
+  const queryClient = useQueryClient();
   const setEntity = useUserStore().setEntity;
-  const router = useRouter();
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>();
   const [openModal, setOpenModal] = useState<boolean>();
@@ -393,6 +423,7 @@ const UsersPage = () => {
 
   const permDeleteRef = useRef<boolean>(true);
   const [permDelete, setPermDelete] = useState<boolean>(true);
+  const [mutateData, setMutateData] = useState<boolean>(false);
 
   const mutationDelete = useMutation({
     mutationFn: async (user: FormSchema) => {
@@ -417,7 +448,12 @@ const UsersPage = () => {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || "Something went wrong");
+      toast.error(error.message);
+      setPopoverDeleteOne(false);
+      setLoading(false);
+      setPopoverBulkDelete(false);
+      setCheckboxClicked([]);
+      refetch();
     },
   });
 
@@ -448,7 +484,7 @@ const UsersPage = () => {
 
     try {
       setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       if (!permDeleteRef.current) {
         toast.success("Successfully undone");
@@ -460,7 +496,6 @@ const UsersPage = () => {
 
       if (permDelete) {
         setEntity("Delete");
-        router.push(`/users/${user.id}`);
         mutationDelete.mutateAsync(user);
       }
     } catch (error) {
@@ -484,6 +519,35 @@ const UsersPage = () => {
     setCheckboxClicked(checked ? allUsers : []);
   };
 
+  const dataMutation = useMutation({
+    mutationFn: async (data: User) => {
+      const res = await fetch("/api/edit-data", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error("Unable to mutate data");
+
+      return res.json();
+    },
+    onSuccess: () => {
+      setMutateData(false);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("Data mutated");
+    },
+    onError: (error) => {
+      toast.error(`Error mutate data: ${error.message}`);
+    },
+  });
+
+  const handleDataRefresh = async (data: User) => {
+    setMutateData(true);
+    await dataMutation.mutateAsync(data);
+  };
+
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchInput);
@@ -496,7 +560,7 @@ const UsersPage = () => {
   return (
     <div className="p-4 gap-3 flex flex-col justify-between">
       <div className="flex items-center justify-between">
-        <div className="flex gap-6">
+        <div className="flex gap-6 flex-col md:flex-row items-center">
           <Input
             className="w-40"
             onChange={(e) => setSearchInput(e.target.value)}
@@ -525,24 +589,23 @@ const UsersPage = () => {
           >
             Clear Filter
           </Button>
+          {!mutateData ? (
+            <DatabaseZap
+              className="cursor-pointer"
+              onClick={() => {
+                handleDataRefresh(data);
+              }}
+            />
+          ) : (
+            <Spinner />
+          )}
         </div>
         <NavigationMenu>
           <NavigationMenuList>
             <NavigationMenuItem className="flex gap-4">
               <NavigationMenuLink asChild>
                 {/* <Link className="flex flex-row items-center"> */}
-                <Button
-                  className=""
-                  // onClick={() =>
-                  //   toast("Clicked", {
-                  //     description: "Mantap",
-                  //     action: {
-                  //       label: "Undo",
-                  //       onClick: () => console.log("Undo"),
-                  //     },
-                  //   })
-                  // }
-                >
+                <Button>
                   <span
                     className="block md:hidden"
                     onClick={() => {
@@ -581,8 +644,12 @@ const UsersPage = () => {
                 onOpenChange={setPopoverBulkDelete}
               >
                 <PopoverTrigger>
-                  {checkboxClicked.length > 0 && (
+                  {checkboxClicked.length > 0 && !loading ? (
                     <Trash2Icon className="cursor-pointer size-4" />
+                  ) : loading ? (
+                    <Spinner />
+                  ) : (
+                    <></>
                   )}
                 </PopoverTrigger>
                 <PopoverContent
@@ -622,10 +689,10 @@ const UsersPage = () => {
         </TableHeader>
         <TableBody className={isPending ? `` : ``}>
           {data ? (
-            data?.map((user: User) => (
+            data?.map((user: User, index) => (
               <TableRow
                 className="w-screen"
-                key={user.id}
+                key={index}
                 onClick={() => {
                   setSelectedUser(user);
                   setOpenModal(true);
@@ -635,10 +702,7 @@ const UsersPage = () => {
                   onClick={(e) => e.stopPropagation()}
                   className="w-[10%] align-left"
                 >
-                  <div
-                    key={user.id}
-                    className="flex items-center space-x-2 ml-0"
-                  >
+                  <div key={index} className="flex items-center space-x-2 ml-0">
                     <Checkbox
                       checked={checkboxClicked.some(
                         (u: User | any) => u.id === user.id
