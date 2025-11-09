@@ -530,7 +530,7 @@ const UsersPage = () => {
   };
 
   const dataMutation = useMutation({
-    mutationFn: async (data: User) => {
+    mutationFn: async (data: User[]) => {
       const res = await fetch("/api/edit-data", {
         method: "PATCH",
         headers: {
@@ -553,9 +553,9 @@ const UsersPage = () => {
     },
   });
 
-  const handleDataRefresh = async (data: User) => {
+  const handleDataRefresh = async (data: User[]) => {
     setMutateData(true);
-    await dataMutation.mutateAsync(data);
+    await dataMutation.mutateAsync(data ? data : []);
   };
 
   useEffect(() => {
@@ -622,17 +622,21 @@ const UsersPage = () => {
               <DatabaseZap
                 className="cursor-pointer"
                 onClick={() => {
+                  // @ts-expect-error:error
                   if (data?.length < 1) {
                     toast.error("No data available to mutate, kindly add one");
                   } else {
-                    handleDataRefresh(data);
+                    handleDataRefresh(data ? data : []);
                   }
                 }}
               />
             ) : (
               <Spinner />
             )}
-            <DownloadIcon className="" onClick={() => handleExportCSV(data)} />
+            <DownloadIcon
+              className=""
+              onClick={() => handleExportCSV(data ? data : [])}
+            />
           </div>
         </div>
         <NavigationMenu>
