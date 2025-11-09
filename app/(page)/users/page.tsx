@@ -1,4 +1,6 @@
 "use client";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import { User } from "@/app/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,6 +75,7 @@ import {
   ChevronDown,
   ChevronUp,
   DatabaseZap,
+  DownloadIcon,
   Edit2Icon,
   Fingerprint,
   Mail,
@@ -255,7 +258,7 @@ const FormCreateEditUser = ({
             <FormField
               control={form.control}
               name="avatar"
-              render={({ field }) => {
+              render={({}) => {
                 return (
                   <FormItem>
                     <FormLabel>Avatar</FormLabel>
@@ -502,6 +505,7 @@ const UsersPage = () => {
 
       if (permDelete) {
         setEntity("Delete");
+        // @ts-expect-error: no care
         mutationDelete.mutateAsync(user);
       }
     } catch (error) {
@@ -563,12 +567,28 @@ const UsersPage = () => {
 
   if (error) return <p>Error loading data</p>;
 
+  const handleExportCSV = (data: User[]) => {
+    if (!data) return;
+    const worksheet = XLSX.utils.json_to_sheet(data);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+    const csvOutput = XLSX.write(workbook, {
+      bookType: "csv",
+      type: "array",
+    });
+
+    const blob = new Blob([csvOutput], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, "data.csv");
+  };
+
   return (
     <div className="p-4 gap-3 flex flex-col ">
       <div className="flex items-center justify-between">
         <div className="flex gap-2 flex-col justify-start md:flex-row">
           <Input
-            className="w-50"
+            className="w-50 text-sm"
             onChange={(e) => setSearchInput(e.target.value)}
             value={searchInput}
             placeholder="Search user..."
@@ -588,7 +608,7 @@ const UsersPage = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <div className="flex w-full items-center gap-4">
+          <div className="flex w-full items-center md:justify-start justify-between gap-4">
             <Button
               onClick={() => {
                 setDebouncedSearch("");
@@ -612,6 +632,7 @@ const UsersPage = () => {
             ) : (
               <Spinner />
             )}
+            <DownloadIcon className="" onClick={() => handleExportCSV(data)} />
           </div>
         </div>
         <NavigationMenu>
@@ -702,7 +723,7 @@ const UsersPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody className={isPending ? `` : ``}>
-          {data?.length > 0 && !isPending ? (
+          {data ? (
             data?.map((user: User, index) => (
               <TableRow
                 className="w-screen"
