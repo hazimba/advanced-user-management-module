@@ -64,9 +64,8 @@ import {
 } from "@/components/ui/table";
 import { handleFileSelect } from "@/hooks/handleFileSelect";
 import { useUserStore } from "@/hooks/user-store";
-import { useFetchData } from "@/lib/queries/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Briefcase,
   CalendarPlus,
@@ -398,13 +397,25 @@ const UsersPage = () => {
   const [expandBio, setExpandBio] = useState<boolean>(false);
 
   const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
-  const { isPending, error, data, refetch } = useFetchData(
-    "users",
-    page,
-    14,
-    debouncedSearch,
-    selectInput
-  );
+  const { data, isPending, error, refetch } = useQuery({
+    queryKey: ["users", page, debouncedSearch, selectInput],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "14",
+      });
+
+      if (debouncedSearch) params.append("search", debouncedSearch);
+      if (selectInput) params.append("role", selectInput);
+
+      const res = await fetch(`/api/users?${params.toString()}`);
+      if (!res.ok) throw new Error("Unable to fetch data");
+
+      return res.json();
+    },
+  });
+
+  console.log("data123", data);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -558,11 +569,11 @@ const UsersPage = () => {
   if (error) return <p>Error loading data</p>;
 
   return (
-    <div className="p-4 gap-3 flex flex-col justify-between">
+    <div className="p-4 gap-3 flex flex-col">
       <div className="flex items-center justify-between">
-        <div className="flex gap-6 flex-col md:flex-row items-center">
+        <div className="flex gap-2 flex-col justify-start md:flex-row items-center">
           <Input
-            className="w-40"
+            className="w-60"
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search user..."
           />
@@ -581,24 +592,26 @@ const UsersPage = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <Button
-            onClick={() => {
-              setSearchInput("");
-              setSelectInput("");
-            }}
-          >
-            Clear Filter
-          </Button>
-          {!mutateData ? (
-            <DatabaseZap
-              className="cursor-pointer"
+          <div className="flex w-full items-center gap-4">
+            <Button
               onClick={() => {
-                handleDataRefresh(data);
+                setSearchInput("");
+                setSelectInput("");
               }}
-            />
-          ) : (
-            <Spinner />
-          )}
+            >
+              Clear Filter
+            </Button>
+            {!mutateData ? (
+              <DatabaseZap
+                className="cursor-pointer"
+                onClick={() => {
+                  handleDataRefresh(data);
+                }}
+              />
+            ) : (
+              <Spinner />
+            )}
+          </div>
         </div>
         <NavigationMenu>
           <NavigationMenuList>

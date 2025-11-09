@@ -114,14 +114,24 @@ export async function PATCH(request: Request) {
   }
 }
 
-// export async function GET() {
-//   try {
-//     const users = await fetch(
-//       `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`
-//     );
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const page = searchParams.get("page") || "1";
+  const search = searchParams.get("search");
+  const limit = searchParams.get("limit") || "14";
+  const role = searchParams.get("role");
 
-//     return NextResponse.json(users);
-//   } catch (error) {
-//     console.log("error", error);
-//   }
-// }
+  const url = new URL(
+    "https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users"
+  );
+
+  const params: Record<string, string> = { page, limit };
+  if (search) params.search = search;
+  if (role) params.role = role;
+  url.search = new URLSearchParams(params).toString();
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  return Response.json(data);
+}
