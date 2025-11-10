@@ -31,6 +31,31 @@ const PermissionPage = () => {
     },
   });
 
+  const mutationRestore = useMutation({
+    mutationFn: async (data: FormSchema) => {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        throw new Error("Error occured");
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["deletedUser"] });
+      toast.success("Success restore");
+      setLoading(false);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      setLoading(false);
+    },
+  });
+
   const mutationDelPerm = useMutation({
     mutationFn: async (data: FormSchema) => {
       const res = await fetch("/api/delete-perm", {
@@ -126,7 +151,7 @@ const PermissionPage = () => {
         <TableBody>
           {data?.length > 0 ? (
             <>
-              {data?.map((du: User, index: number) => (
+              {data?.map((du: User[] | any, index: number) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">{du.name}</TableCell>
                   <TableCell>{du.phoneNumber}</TableCell>
@@ -136,7 +161,7 @@ const PermissionPage = () => {
                       className="cursor-pointer"
                       size={"15"}
                       onClick={async () => {
-                        // @ts-expect-error:nocare
+                        await mutationRestore.mutateAsync(du);
                         await mutationDelPerm.mutateAsync(du);
                       }}
                     />
@@ -144,19 +169,7 @@ const PermissionPage = () => {
                       className="cursor-pointer"
                       size={"15"}
                       onClick={async () => {
-                        try {
-                          await fetch("/api/delete-perm", {
-                            method: "DELETE",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify(du),
-                          });
-                          refetch();
-                          toast(`User is delete permenantly`);
-                        } catch (error) {
-                          console.error("error", error);
-                        }
+                        await mutationDelPerm.mutateAsync(du);
                       }}
                     />
                   </TableCell>

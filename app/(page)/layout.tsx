@@ -15,7 +15,7 @@ const PageLayout = ({ children }: { children: React.ReactNode }) => {
         <Header />
         <Toaster position="top-center" />
         <QueryClientProvider client={queryClient}>
-          <main className="px-4">{children}</main>
+          <main>{children}</main>
         </QueryClientProvider>
       </div>
       <Footer />

@@ -1,6 +1,4 @@
 "use client";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 import { User } from "@/app/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +19,10 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import dayjs from "dayjs";
+import { saveAs } from "file-saver";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 import { ImageUploadForm } from "@/components/file-upload";
 import { PhoneInput } from "@/components/phone-input";
@@ -218,7 +218,7 @@ const FormCreateEditUser = ({
         setOpenCreateUser(isOpen);
       }}
     >
-      <DialogContent className="sm:max-w-[425px] max-h-[500px] overflow-auto">
+      <DialogContent className=" max-h-[500px] overflow-auto">
         <DialogHeader>
           <DialogTitle>
             {!selectedEditUser ? "Create User" : "Edit User"}
@@ -396,6 +396,8 @@ const UsersPage = () => {
   const [popoverBulkDelete, setPopoverBulkDelete] = useState<boolean>();
   const [expandBio, setExpandBio] = useState<boolean>(false);
 
+  console.log("checkboxClicked", checkboxClicked);
+
   const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ["users", page, debouncedSearch, selectInput],
@@ -544,6 +546,7 @@ const UsersPage = () => {
       return res.json();
     },
     onSuccess: () => {
+      setCheckboxClicked([]);
       setMutateData(false);
       queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("Data mutated");
@@ -554,6 +557,7 @@ const UsersPage = () => {
   });
 
   const handleDataRefresh = async (data: User[]) => {
+    console.log("data", data);
     setMutateData(true);
     await dataMutation.mutateAsync(data ? data : []);
   };
@@ -568,6 +572,7 @@ const UsersPage = () => {
   if (error) return <p>Error loading data</p>;
 
   const handleExportCSV = (data: User[]) => {
+    setLoading(true);
     if (!data) return;
     const worksheet = XLSX.utils.json_to_sheet(data);
 
@@ -581,405 +586,434 @@ const UsersPage = () => {
 
     const blob = new Blob([csvOutput], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, "data.csv");
+    setLoading(false);
   };
 
   return (
-    <div className="p-4 gap-3 flex flex-col ">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2 flex-col justify-start md:flex-row">
-          <Input
-            className="w-50 text-sm"
-            onChange={(e) => setSearchInput(e.target.value)}
-            value={searchInput}
-            placeholder="Search user..."
-          />
-          <Select
-            onValueChange={(value) => setSelectInput(value)}
-            value={selectInput}
-          >
-            <SelectTrigger className="w-50">
-              <SelectValue placeholder="Select a role..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="guest">Guest</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <div className="flex w-full items-center md:justify-start justify-between gap-4">
-            <Button
-              onClick={() => {
-                setDebouncedSearch("");
-                setSearchInput("");
-                setSelectInput("");
-              }}
+    <div className="flex w-screen justify-center items-center">
+      <div className="p-4 gap-3 w-full max-w-7xl flex-col ">
+        <div className="flex items-end justify-between">
+          <div className="flex gap-2 flex-col justify-start md:flex-row">
+            <Input
+              className="w-50 text-sm"
+              onChange={(e) => setSearchInput(e.target.value)}
+              value={searchInput}
+              placeholder="Search user..."
+            />
+            <Select
+              onValueChange={(value) => setSelectInput(value)}
+              value={selectInput}
             >
-              Clear Filter
-            </Button>
-            {!mutateData ? (
-              <DatabaseZap
-                className="cursor-pointer"
+              <SelectTrigger className="w-50">
+                <SelectValue placeholder="Select a role..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="guest">Guest</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <div className="flex w-full items-center md:justify-start justify-between gap-4">
+              <Button
                 onClick={() => {
-                  // @ts-expect-error:error
-                  if (data?.length < 1) {
-                    toast.error("No data available to mutate, kindly add one");
-                  } else {
-                    handleDataRefresh(data ? data : []);
-                  }
+                  setDebouncedSearch("");
+                  setSearchInput("");
+                  setSelectInput("");
                 }}
-              />
-            ) : (
-              <Spinner />
-            )}
-            <DownloadIcon
-              className=""
-              onClick={() => handleExportCSV(data ? data : [])}
-            />
-          </div>
-        </div>
-        <NavigationMenu>
-          <NavigationMenuList>
-            <NavigationMenuItem className="flex gap-4">
-              <NavigationMenuLink asChild>
-                {/* <Link className="flex flex-row items-center"> */}
-                <Button>
-                  <span
-                    className="block md:hidden"
-                    onClick={() => {
-                      setOpenCreateUser(true);
-                    }}
-                  >
-                    <PlusIcon />
-                  </span>
-                  <span
-                    className="hidden md:block"
-                    onClick={() => {
-                      setOpenCreateUser(true);
-                    }}
-                  >
-                    Add New User
-                  </span>
-                </Button>
-                {/* </Link> */}
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
-      </div>
-      <Table>
-        <TableCaption>A list of users.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="flex items-center gap-3">
-              <Checkbox
-                checked={checkboxClicked?.length === data?.length}
-                onCheckedChange={(checked) => {
-                  handleCheckAll(!!checked, data);
-                }}
-              />
-              <Popover
-                open={popoverBulkDelete}
-                onOpenChange={setPopoverBulkDelete}
               >
-                <PopoverTrigger>
-                  {checkboxClicked.length > 0 && !loading ? (
-                    <Trash2Icon className="cursor-pointer size-4" />
-                  ) : loading ? (
-                    <Spinner />
-                  ) : (
-                    <></>
-                  )}
-                </PopoverTrigger>
-                <PopoverContent
-                  side="right"
-                  className="flex flex-col gap-2 font-2"
-                >
-                  <div className="font-2 text-xs">
-                    <div className="pb-4">
-                      Are you sure want to delete the selected checkbox?
-                    </div>
-                    {/* @ts-expect-error:no care  */}
-                    {checkboxClicked?.map((i: User, index) => {
-                      return (
-                        <div className="font-bold" key={index}>
-                          {i.name}
-                        </div>
+                Clear Filter
+              </Button>
+              {!mutateData ? (
+                <DatabaseZap
+                  onLoad={() => <Spinner />}
+                  className="cursor-pointer"
+                  onClick={() => {
+                    // @ts-expect-error:error
+                    if (data?.length < 1) {
+                      toast.error(
+                        "No data available to mutate, kindly add one"
                       );
-                    })}
-                  </div>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      handleDeleteUser(checkboxClicked);
-                      setPopoverBulkDelete(false);
-                    }}
-                  >
-                    {loading ? "Deleting..." : "Yes"}
-                  </Button>
-                </PopoverContent>
-              </Popover>
-            </TableHead>
-            <TableHead>NAME</TableHead>
-            <TableHead className="hidden md:table-cell">PHONE</TableHead>
-            <TableHead className="text-right">ACTION</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className={isPending ? `` : ``}>
-          {data ? (
-            data?.map((user: User, index) => (
-              <TableRow
-                className="w-screen"
-                key={index}
-                onClick={() => {
-                  setSelectedUser(user);
-                  setOpenModal(true);
-                }}
-              >
-                <TableCell
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-[10%] align-left"
-                >
-                  <div key={index} className="flex items-center space-x-2 ml-0">
-                    <Checkbox
-                      checked={checkboxClicked.some(
-                        (u: User | any) => u.id === user.id
-                      )}
-                      onCheckedChange={(checked) =>
-                        handleCheckboxClick(user, !!checked)
-                      }
-                    />
-                  </div>
-                </TableCell>
-                <TableCell className="md:w-[30%] max-w-[120px] truncate">
-                  {user.name}
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {user.phoneNumber}
-                </TableCell>
-                <TableCell
-                  className="flex justify-end gap-4"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Edit2Icon
-                    className="cursor-pointer size-4"
-                    onClick={() => {
-                      setSelectedEditUser(user);
-                      setOpenCreateUser(true);
-                    }}
-                  />
-                  <Popover
-                    // @ts-expect-error:if-not-will-render-all
-                    open={popoverDeleteOne === user.id}
-                    onOpenChange={(isOpen) =>
-                      // @ts-expect-error:if-not-will-render-all
-                      setPopoverDeleteOne(isOpen ? user.id : null)
+                    } else {
+                      handleDataRefresh(
+                        checkboxClicked.length > 0
+                          ? checkboxClicked
+                          : data && data.length > 0
+                          ? data
+                          : []
+                      );
                     }
-                  >
-                    <PopoverTrigger>
-                      <Trash2Icon
-                        className="cursor-pointer size-4"
-                        onClick={() => setPopoverDeleteOne(true)}
-                      />
-                    </PopoverTrigger>
-                    <PopoverContent
-                      side="left"
-                      className="flex flex-col gap-2 font-2 text-2"
-                    >
-                      <div className="font-2 text-xs flex flex-col gap-2">
-                        Are you sure want to delete the selected checkbox user:
-                        <div className="font-bold">{`${user.name}`}</div>
-                      </div>
-                      <Button
-                        className="flex"
-                        variant="destructive"
-                        disabled={loading}
-                        onClick={() => {
-                          // @ts-expect-error:no care
-                          handleDeleteUser(user);
-                        }}
-                      >
-                        {loading ? "Deleting..." : "Yes"}
-                      </Button>
-                    </PopoverContent>
-                  </Popover>
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={3} className="text-center">
-                No data available
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      <Pagination>
-        <PaginationContent className="flex justify-end">
-          <PaginationItem>
-            <PaginationPrevious
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              className={page === 1 ? "pointer-events-none opacity-50" : ""}
-            />
-          </PaginationItem>
-          <span className="flex items-center px-4">Page {page}</span>
-          <PaginationItem>
-            <PaginationNext
-              onClick={() => setPage((p) => p + 1)}
-              className={
-                !data || data.length < 10
-                  ? "pointer-events-none opacity-50"
-                  : ""
-              }
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-      <FormCreateEditUser
-        form={form}
-        loading={loading}
-        setLoading={setLoading}
-        openCreateUser={openCreateUser}
-        setOpenCreateUser={setOpenCreateUser}
-        selectedEditUser={selectedEditUser}
-        setSelectedEditUser={setSelectedEditUser}
-      />
-      <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogTrigger asChild></DialogTrigger>
-        <DialogContent className="sm:max-w-xl max-h-[600px] overflow-auto">
-          <DialogHeader className="lg:space-y-3">
-            <DialogTitle className="lg:text-2xl">User Details</DialogTitle>
-            <DialogDescription>
-              View complete user information
-            </DialogDescription>
-          </DialogHeader>
-          {selectedUser && (
-            <div className="lg:mt-6 space-y-4 truncate">
-              {selectedUser.avatar ? (
-                <Image
-                  src={
-                    selectedUser.avatar
-                      ? selectedUser.avatar
-                      : "https://avatars.githubusercontent.com/u/31102952"
-                  }
-                  height={200}
-                  width={200}
-                  alt=""
+                  }}
                 />
               ) : (
-                <></>
+                <Spinner />
               )}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <UserIcon className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Name
-                  </p>
-                  <p className="text-sm text-slate-900 font-medium truncate">
-                    {selectedUser.name}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Mail className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Email
-                  </p>
-                  <p className="text-sm text-slate-900 truncate md:w-100 w-40">
-                    {selectedUser.email}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Phone className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Phone
-                  </p>
-                  <p className="text-sm text-slate-900">
-                    {selectedUser.phoneNumber}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Role
-                  </p>
-                  <p className="text-sm text-slate-900 font-medium">
-                    {selectedUser.role}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <Shield className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Status
-                  </p>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {selectedUser.active ? "Active" : "Not Active"}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
-                <CalendarPlus className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Created At
-                  </div>
-                  <div className="text-sm text-slate-900 font-medium">
-                    {dayjs(selectedUser?.createdAt).format("DD-MM-YY")}
-                  </div>
-                </div>
-              </div>
-              <div
-                className={`flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors ${
-                  expandBio ? "h-50" : ""
-                }`}
-              >
-                <Fingerprint className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    Bio
-                  </p>
-                  <p
-                    className={`text-sm text-slate-900 font-medium ${
-                      expandBio ? "text-wrap" : "truncate"
-                    }`}
-                  >
-                    {selectedUser.bio}
-                  </p>
-                </div>
-                <div>
-                  {expandBio && selectedUser.bio.length > 20 ? (
-                    <ChevronUp onClick={() => setExpandBio(false)} />
-                  ) : selectedUser.bio.length > 20 ? (
-                    <ChevronDown onClick={() => setExpandBio(true)} />
-                  ) : (
-                    <></>
-                  )}
-                </div>
-              </div>
+              <DownloadIcon
+                onLoad={() => <Spinner />}
+                className=""
+                onClick={() =>
+                  handleExportCSV(
+                    checkboxClicked.length > 0
+                      ? checkboxClicked
+                      : data && data.length > 0
+                      ? data
+                      : []
+                  )
+                }
+              />
             </div>
-          )}
-          <DialogFooter>
-            <DialogClose
-              asChild
-              onClick={() => {
-                setOpenModal(false);
-                // setSelectedUser(null);
-              }}
-            >
-              <Button variant="outline">Close</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem className="flex gap-4">
+                <NavigationMenuLink asChild>
+                  {/* <Link className="flex flex-row items-center"> */}
+                  <Button variant="outline">
+                    <span
+                      className="block md:hidden "
+                      onClick={() => {
+                        setOpenCreateUser(true);
+                      }}
+                    >
+                      <PlusIcon />
+                    </span>
+                    <span
+                      className="hidden md:block"
+                      onClick={() => {
+                        setOpenCreateUser(true);
+                      }}
+                    >
+                      Add New User
+                    </span>
+                  </Button>
+                  {/* </Link> */}
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+        <Table>
+          <TableCaption>A list of users.</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="flex items-center gap-3">
+                <Checkbox
+                  checked={checkboxClicked?.length === data?.length}
+                  onCheckedChange={(checked) => {
+                    handleCheckAll(!!checked, data);
+                  }}
+                />
+                <Popover
+                  open={popoverBulkDelete}
+                  onOpenChange={setPopoverBulkDelete}
+                >
+                  <PopoverTrigger>
+                    {checkboxClicked.length > 0 && !loading ? (
+                      <Trash2Icon className="cursor-pointer size-4" />
+                    ) : loading ? (
+                      <Spinner />
+                    ) : (
+                      <></>
+                    )}
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="right"
+                    className="flex flex-col gap-2 font-2"
+                  >
+                    <div className="font-2 text-xs">
+                      <div className="pb-4">
+                        Are you sure want to delete the selected checkbox?
+                      </div>
+                      {/* @ts-expect-error:no care  */}
+                      {checkboxClicked?.map((i: User, index) => {
+                        return (
+                          <div className="font-bold" key={index}>
+                            {i.name}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        handleDeleteUser(checkboxClicked);
+                        setPopoverBulkDelete(false);
+                      }}
+                    >
+                      {loading ? "Deleting..." : "Yes"}
+                    </Button>
+                  </PopoverContent>
+                </Popover>
+              </TableHead>
+              <TableHead>NAME</TableHead>
+              <TableHead className="hidden md:table-cell">PHONE</TableHead>
+              <TableHead className="hidden md:table-cell">ROLE</TableHead>
+              <TableHead className="text-right">ACTION</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className={isPending ? `` : ``}>
+            {data ? (
+              data?.map((user: User, index) => (
+                <TableRow
+                  className="w-screen"
+                  key={index}
+                  onClick={() => {
+                    setSelectedUser(user);
+                    setOpenModal(true);
+                  }}
+                >
+                  <TableCell
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-[10%] align-left"
+                  >
+                    <div
+                      key={index}
+                      className="flex items-center space-x-2 ml-0"
+                    >
+                      <Checkbox
+                        checked={checkboxClicked.some(
+                          (u: User | any) => u.id === user.id
+                        )}
+                        onCheckedChange={(checked) =>
+                          handleCheckboxClick(user, !!checked)
+                        }
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell className="md:w-[30%] max-w-[120px] truncate">
+                    {user.name}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {user.phoneNumber}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {user.role.toUpperCase()}
+                  </TableCell>
+                  <TableCell
+                    className="flex justify-end gap-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Edit2Icon
+                      className="cursor-pointer size-4"
+                      onClick={() => {
+                        setSelectedEditUser(user);
+                        setOpenCreateUser(true);
+                      }}
+                    />
+                    <Popover
+                      // @ts-expect-error:if-not-will-render-all
+                      open={popoverDeleteOne === user.id}
+                      onOpenChange={(isOpen) =>
+                        // @ts-expect-error:if-not-will-render-all
+                        setPopoverDeleteOne(isOpen ? user.id : null)
+                      }
+                    >
+                      <PopoverTrigger>
+                        <Trash2Icon
+                          className="cursor-pointer size-4"
+                          onClick={() => setPopoverDeleteOne(true)}
+                        />
+                      </PopoverTrigger>
+                      <PopoverContent
+                        side="left"
+                        className="flex flex-col gap-2 font-2 text-2"
+                      >
+                        <div className="font-2 text-xs flex flex-col gap-2">
+                          Are you sure want to delete the selected checkbox
+                          user:
+                          <div className="font-bold">{`${user.name}`}</div>
+                        </div>
+                        <Button
+                          className="flex"
+                          variant="destructive"
+                          disabled={loading}
+                          onClick={() => {
+                            // @ts-expect-error:no care
+                            handleDeleteUser(user);
+                          }}
+                        >
+                          {loading ? "Deleting..." : "Yes"}
+                        </Button>
+                      </PopoverContent>
+                    </Popover>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center">
+                  No data available
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        <Pagination>
+          <PaginationContent className="flex justify-end">
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                className={page === 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            <span className="flex items-center px-4">Page {page}</span>
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setPage((p) => p + 1)}
+                className={
+                  !data || data.length < 10
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+        <FormCreateEditUser
+          form={form}
+          loading={loading}
+          setLoading={setLoading}
+          openCreateUser={openCreateUser}
+          setOpenCreateUser={setOpenCreateUser}
+          selectedEditUser={selectedEditUser}
+          setSelectedEditUser={setSelectedEditUser}
+        />
+        <Dialog open={openModal} onOpenChange={setOpenModal}>
+          <DialogTrigger asChild></DialogTrigger>
+          <DialogContent className="sm:max-w-xl max-h-[600px] overflow-auto">
+            <DialogHeader className="lg:space-y-3">
+              <DialogTitle className="lg:text-2xl">User Details</DialogTitle>
+              <DialogDescription>
+                View complete user information
+              </DialogDescription>
+            </DialogHeader>
+            {selectedUser && (
+              <div className="lg:mt-6 space-y-4 truncate">
+                {selectedUser.avatar ? (
+                  <Image
+                    src={
+                      selectedUser.avatar
+                        ? selectedUser.avatar
+                        : "https://avatars.githubusercontent.com/u/31102952"
+                    }
+                    height={200}
+                    width={200}
+                    alt=""
+                  />
+                ) : (
+                  <></>
+                )}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
+                  <UserIcon className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                      Name
+                    </p>
+                    <p className="text-sm text-slate-900 font-medium truncate">
+                      {selectedUser.name}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
+                  <Mail className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                      Email
+                    </p>
+                    <p className="text-sm text-slate-900 truncate md:w-100 w-40">
+                      {selectedUser.email}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
+                  <Phone className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                      Phone
+                    </p>
+                    <p className="text-sm text-slate-900">
+                      {selectedUser.phoneNumber}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
+                  <Briefcase className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                      Role
+                    </p>
+                    <p className="text-sm text-slate-900 font-medium">
+                      {selectedUser.role}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
+                  <Shield className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                      Status
+                    </p>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {selectedUser.active ? "Active" : "Not Active"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors">
+                  <CalendarPlus className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                      Created At
+                    </div>
+                    <div className="text-sm text-slate-900 font-medium">
+                      {dayjs(selectedUser?.createdAt).format("DD-MM-YY")}
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className={`flex items-center gap-3 p-3 rounded-lg bg-slate-200 hover:bg-slate-100 transition-colors ${
+                    expandBio ? "h-50" : ""
+                  }`}
+                >
+                  <Fingerprint className="w-5 h-5 text-slate-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                      Bio
+                    </p>
+                    <p
+                      className={`text-sm text-slate-900 font-medium ${
+                        expandBio ? "text-wrap" : "truncate"
+                      }`}
+                    >
+                      {selectedUser.bio}
+                    </p>
+                  </div>
+                  <div>
+                    {expandBio && selectedUser.bio.length > 20 ? (
+                      <ChevronUp onClick={() => setExpandBio(false)} />
+                    ) : selectedUser.bio.length > 20 ? (
+                      <ChevronDown onClick={() => setExpandBio(true)} />
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <DialogClose
+                asChild
+                onClick={() => {
+                  setOpenModal(false);
+                  // setSelectedUser(null);
+                }}
+              >
+                <Button variant="outline">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 };
