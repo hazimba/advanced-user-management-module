@@ -396,15 +396,13 @@ const UsersPage = () => {
   const [popoverBulkDelete, setPopoverBulkDelete] = useState<boolean>();
   const [expandBio, setExpandBio] = useState<boolean>(false);
 
-  console.log("checkboxClicked", checkboxClicked);
-
   const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ["users", page, debouncedSearch, selectInput],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(page),
-        limit: "14",
+        limit: "30",
       });
 
       if (debouncedSearch) params.append("name", debouncedSearch);
@@ -557,7 +555,6 @@ const UsersPage = () => {
   });
 
   const handleDataRefresh = async (data: User[]) => {
-    console.log("data", data);
     setMutateData(true);
     await dataMutation.mutateAsync(data ? data : []);
   };
@@ -591,8 +588,8 @@ const UsersPage = () => {
 
   return (
     <div className="flex w-screen justify-center items-center">
-      <div className="p-4 gap-3 w-full max-w-7xl flex-col ">
-        <div className="flex items-end justify-between">
+      <div className="p-4 gap-3 w-full max-w-7xl flex-col">
+        <div className="flex items-end justify-between pb-4">
           <div className="flex gap-2 flex-col justify-start md:flex-row">
             <Input
               className="w-50 text-sm"
@@ -693,162 +690,164 @@ const UsersPage = () => {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-        <Table>
-          <TableCaption>A list of users.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="flex items-center gap-3">
-                <Checkbox
-                  checked={checkboxClicked?.length === data?.length}
-                  onCheckedChange={(checked) => {
-                    handleCheckAll(!!checked, data);
-                  }}
-                />
-                <Popover
-                  open={popoverBulkDelete}
-                  onOpenChange={setPopoverBulkDelete}
-                >
-                  <PopoverTrigger>
-                    {checkboxClicked.length > 0 && !loading ? (
-                      <Trash2Icon className="cursor-pointer size-4" />
-                    ) : loading ? (
-                      <Spinner />
-                    ) : (
-                      <></>
-                    )}
-                  </PopoverTrigger>
-                  <PopoverContent
-                    side="right"
-                    className="flex flex-col gap-2 font-2"
+        <div className="!h-[500px] !overflow-auto !scroll-y">
+          <Table className="">
+            <TableCaption>A list of users.</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="flex items-center gap-3">
+                  <Checkbox
+                    checked={checkboxClicked?.length === data?.length}
+                    onCheckedChange={(checked) => {
+                      handleCheckAll(!!checked, data);
+                    }}
+                  />
+                  <Popover
+                    open={popoverBulkDelete}
+                    onOpenChange={setPopoverBulkDelete}
                   >
-                    <div className="font-2 text-xs">
-                      <div className="pb-4">
-                        Are you sure want to delete the selected checkbox?
-                      </div>
-                      {/* @ts-expect-error:no care  */}
-                      {checkboxClicked?.map((i: User, index) => {
-                        return (
-                          <div className="font-bold" key={index}>
-                            {i.name}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <Button
-                      variant="destructive"
-                      onClick={() => {
-                        handleDeleteUser(checkboxClicked);
-                        setPopoverBulkDelete(false);
-                      }}
+                    <PopoverTrigger>
+                      {checkboxClicked.length > 0 && !loading ? (
+                        <Trash2Icon className="cursor-pointer size-4" />
+                      ) : loading ? (
+                        <Spinner />
+                      ) : (
+                        <></>
+                      )}
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="right"
+                      className="flex flex-col gap-2 font-2"
                     >
-                      {loading ? "Deleting..." : "Yes"}
-                    </Button>
-                  </PopoverContent>
-                </Popover>
-              </TableHead>
-              <TableHead>NAME</TableHead>
-              <TableHead className="hidden md:table-cell">PHONE</TableHead>
-              <TableHead className="hidden md:table-cell">ROLE</TableHead>
-              <TableHead className="text-right">ACTION</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className={isPending ? `` : ``}>
-            {data ? (
-              data?.map((user: User, index) => (
-                <TableRow
-                  className="w-screen"
-                  key={index}
-                  onClick={() => {
-                    setSelectedUser(user);
-                    setOpenModal(true);
-                  }}
-                >
-                  <TableCell
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-[10%] align-left"
-                  >
-                    <div
-                      key={index}
-                      className="flex items-center space-x-2 ml-0"
-                    >
-                      <Checkbox
-                        checked={checkboxClicked.some(
-                          (u: User | any) => u.id === user.id
-                        )}
-                        onCheckedChange={(checked) =>
-                          handleCheckboxClick(user, !!checked)
-                        }
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="md:w-[30%] max-w-[120px] truncate">
-                    {user.name}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {user.phoneNumber}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {user.role.toUpperCase()}
-                  </TableCell>
-                  <TableCell
-                    className="flex justify-end gap-4"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Edit2Icon
-                      className="cursor-pointer size-4"
-                      onClick={() => {
-                        setSelectedEditUser(user);
-                        setOpenCreateUser(true);
-                      }}
-                    />
-                    <Popover
-                      // @ts-expect-error:if-not-will-render-all
-                      open={popoverDeleteOne === user.id}
-                      onOpenChange={(isOpen) =>
-                        // @ts-expect-error:if-not-will-render-all
-                        setPopoverDeleteOne(isOpen ? user.id : null)
-                      }
-                    >
-                      <PopoverTrigger>
-                        <Trash2Icon
-                          className="cursor-pointer size-4"
-                          onClick={() => setPopoverDeleteOne(true)}
-                        />
-                      </PopoverTrigger>
-                      <PopoverContent
-                        side="left"
-                        className="flex flex-col gap-2 font-2 text-2"
-                      >
-                        <div className="font-2 text-xs flex flex-col gap-2">
-                          Are you sure want to delete the selected checkbox
-                          user:
-                          <div className="font-bold">{`${user.name}`}</div>
+                      <div className="font-2 text-xs">
+                        <div className="pb-4">
+                          Are you sure want to delete the selected checkbox?
                         </div>
-                        <Button
-                          className="flex"
-                          variant="destructive"
-                          disabled={loading}
-                          onClick={() => {
-                            // @ts-expect-error:no care
-                            handleDeleteUser(user);
-                          }}
+                        {/* @ts-expect-error:no care  */}
+                        {checkboxClicked?.map((i: User, index) => {
+                          return (
+                            <div className="font-bold" key={index}>
+                              {i.name}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          handleDeleteUser(checkboxClicked);
+                          setPopoverBulkDelete(false);
+                        }}
+                      >
+                        {loading ? "Deleting..." : "Yes"}
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
+                </TableHead>
+                <TableHead>NAME</TableHead>
+                <TableHead className="hidden md:table-cell">PHONE</TableHead>
+                <TableHead className="hidden md:table-cell">ROLE</TableHead>
+                <TableHead className="text-right">ACTION</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data ? (
+                data?.map((user: User, index) => (
+                  <TableRow
+                    className="w-screen"
+                    key={index}
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setOpenModal(true);
+                    }}
+                  >
+                    <TableCell
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-[10%] align-left"
+                    >
+                      <div
+                        key={index}
+                        className="flex items-center space-x-2 ml-0"
+                      >
+                        <Checkbox
+                          checked={checkboxClicked.some(
+                            (u: User | any) => u.id === user.id
+                          )}
+                          onCheckedChange={(checked) =>
+                            handleCheckboxClick(user, !!checked)
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="md:w-[30%] max-w-[120px] truncate">
+                      {user.name}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {user.phoneNumber}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {user.role.toUpperCase()}
+                    </TableCell>
+                    <TableCell
+                      className="flex justify-end gap-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Edit2Icon
+                        className="cursor-pointer size-4"
+                        onClick={() => {
+                          setSelectedEditUser(user);
+                          setOpenCreateUser(true);
+                        }}
+                      />
+                      <Popover
+                        // @ts-expect-error:if-not-will-render-all
+                        open={popoverDeleteOne === user.id}
+                        onOpenChange={(isOpen) =>
+                          // @ts-expect-error:if-not-will-render-all
+                          setPopoverDeleteOne(isOpen ? user.id : null)
+                        }
+                      >
+                        <PopoverTrigger>
+                          <Trash2Icon
+                            className="cursor-pointer size-4"
+                            onClick={() => setPopoverDeleteOne(true)}
+                          />
+                        </PopoverTrigger>
+                        <PopoverContent
+                          side="left"
+                          className="flex flex-col gap-2 font-2 text-2"
                         >
-                          {loading ? "Deleting..." : "Yes"}
-                        </Button>
-                      </PopoverContent>
-                    </Popover>
+                          <div className="font-2 text-xs flex flex-col gap-2">
+                            Are you sure want to delete the selected checkbox
+                            user:
+                            <div className="font-bold">{`${user.name}`}</div>
+                          </div>
+                          <Button
+                            className="flex"
+                            variant="destructive"
+                            disabled={loading}
+                            onClick={() => {
+                              // @ts-expect-error:no care
+                              handleDeleteUser(user);
+                            }}
+                          >
+                            {loading ? "Deleting..." : "Yes"}
+                          </Button>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center">
+                    No data available
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center">
-                  No data available
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
         <Pagination>
           <PaginationContent className="flex justify-end">
             <PaginationItem>
