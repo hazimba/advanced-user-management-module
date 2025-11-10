@@ -4,8 +4,6 @@ export async function DELETE(request: Request) {
   try {
     const user = await request.json();
 
-    console.log("user", user);
-
     if (user.length < 1)
       return NextResponse.json(
         { message: "No data to delete" },

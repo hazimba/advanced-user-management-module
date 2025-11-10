@@ -64,6 +64,7 @@ const AnalyticsPage = () => {
           const dateA = new Date(yearA, monthA - 1, dayA);
           const dateB = new Date(yearB, monthB - 1, dayB);
 
+          // @ts-expect-error:nocare
           return dateA - dateB;
         })
     : [];

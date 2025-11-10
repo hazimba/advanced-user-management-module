@@ -396,8 +396,6 @@ const UsersPage = () => {
   const [popoverBulkDelete, setPopoverBulkDelete] = useState<boolean>();
   const [expandBio, setExpandBio] = useState<boolean>(false);
 
-  console.log("checkboxClicked", checkboxClicked);
-
   const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ["users", page, debouncedSearch, selectInput],
@@ -557,7 +555,6 @@ const UsersPage = () => {
   });
 
   const handleDataRefresh = async (data: User[]) => {
-    console.log("data", data);
     setMutateData(true);
     await dataMutation.mutateAsync(data ? data : []);
   };

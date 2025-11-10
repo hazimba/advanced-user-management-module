@@ -40,7 +40,7 @@ const Header = () => {
                 <Link href="/deleted">Deleted</Link>
               </NavigationMenuLink>
               <NavigationMenuLink asChild className="hidden md:block">
-                <Link href="/analytics">Analytics</Link>
+                <Link href="/users/analytics">Analytics</Link>
               </NavigationMenuLink>
               <NavigationMenuLink>
                 <ModeToggle toggle />
@@ -78,7 +78,7 @@ const Header = () => {
                       </PopoverClose>
                       <PopoverClose asChild>
                         <Link
-                          href="/analytics"
+                          href="/users/analytics"
                           className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
                         >
                           <ChartPie className="h-4 w-4" />

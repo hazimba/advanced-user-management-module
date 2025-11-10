@@ -2,6 +2,7 @@
 import { Cell, Pie, PieChart, PieLabelRenderProps } from "recharts";
 import { Spinner } from "./ui/spinner";
 import { memo } from "react";
+import { User } from "@/app/types";
 
 const RADIAN = Math.PI / 180;
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
@@ -62,7 +63,7 @@ const PieChartWithCustomizedLabel = memo(function PieChartWithCustomizedLabel({
           dataKey="value"
           isAnimationActive={isAnimationActive}
         >
-          {data?.map((entry, index) => (
+          {data?.map((entry: User, index: number) => (
             <Cell
               key={`cell-${entry.name}`}
               fill={COLORS[index % COLORS.length]}
