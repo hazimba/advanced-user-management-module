@@ -1,5 +1,6 @@
 "use client";
 import { User } from "@/app/types";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,9 +19,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import dayjs from "dayjs";
 import { saveAs } from "file-saver";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -70,6 +70,7 @@ import { useUserStore } from "@/hooks/user-store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowRight,
   Briefcase,
   CalendarPlus,
   ChevronDown,
@@ -89,6 +90,12 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 enum Role {
   admin = "admin",
@@ -381,6 +388,7 @@ const FormCreateEditUser = ({
 };
 
 const UsersPage = () => {
+  const pathName = usePathname();
   const queryClient = useQueryClient();
   const setEntity = useUserStore().setEntity;
   const [page, setPage] = useState(1);
@@ -395,9 +403,38 @@ const UsersPage = () => {
   const [selectedEditUser, setSelectedEditUser] = useState<User>();
   const [popoverBulkDelete, setPopoverBulkDelete] = useState<boolean>();
   const [expandBio, setExpandBio] = useState<boolean>(false);
-
+  const permDeleteRef = useRef<boolean>(true);
+  const [permDelete, setPermDelete] = useState<boolean>(true);
+  const [mutateData, setMutateData] = useState<boolean>(false);
   const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
-  const { data, isPending, error, refetch } = useQuery({
+
+  useEffect(() => {
+    permDeleteRef.current = permDelete;
+  }, [permDelete]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      active: "",
+      avatar: "",
+      phoneNumber: "",
+      email: "",
+      role: undefined,
+      bio: "",
+      id: "",
+      createdAt: "",
+    },
+  });
+
+  const { data, error, refetch, isPending } = useQuery({
     queryKey: ["users", page, debouncedSearch, selectInput],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -416,24 +453,30 @@ const UsersPage = () => {
     },
   });
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      active: "",
-      avatar: "",
-      phoneNumber: "",
-      email: "",
-      role: undefined,
-      bio: "",
-      id: "",
-      createdAt: "",
+  const dataMutation = useMutation({
+    mutationFn: async (data: User[]) => {
+      const res = await fetch("/api/edit-data", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error("Unable to mutate data");
+
+      return res.json();
+    },
+    onSuccess: () => {
+      setCheckboxClicked([]);
+      setMutateData(false);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("Data mutated");
+    },
+    onError: (error) => {
+      toast.error(`Error mutate data: ${error.message}`);
     },
   });
-
-  const permDeleteRef = useRef<boolean>(true);
-  const [permDelete, setPermDelete] = useState<boolean>(true);
-  const [mutateData, setMutateData] = useState<boolean>(false);
 
   const mutationDelete = useMutation({
     mutationFn: async (user: FormSchema) => {
@@ -466,10 +509,6 @@ const UsersPage = () => {
       refetch();
     },
   });
-
-  useEffect(() => {
-    permDeleteRef.current = permDelete;
-  }, [permDelete]);
 
   const handleDeleteUser = async (user: string[] | string) => {
     setPermDelete(true);
@@ -529,44 +568,10 @@ const UsersPage = () => {
     setCheckboxClicked(checked ? allUsers : []);
   };
 
-  const dataMutation = useMutation({
-    mutationFn: async (data: User[]) => {
-      const res = await fetch("/api/edit-data", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) throw new Error("Unable to mutate data");
-
-      return res.json();
-    },
-    onSuccess: () => {
-      setCheckboxClicked([]);
-      setMutateData(false);
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast.success("Data mutated");
-    },
-    onError: (error) => {
-      toast.error(`Error mutate data: ${error.message}`);
-    },
-  });
-
   const handleDataRefresh = async (data: User[]) => {
     setMutateData(true);
     await dataMutation.mutateAsync(data ? data : []);
   };
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(searchInput);
-    }, 200);
-    return () => clearTimeout(handler);
-  }, [searchInput]);
-
-  if (error) return <p>Error loading data</p>;
 
   const handleExportCSV = (data: User[]) => {
     setLoading(true);
@@ -586,9 +591,22 @@ const UsersPage = () => {
     setLoading(false);
   };
 
+  if (error) return <p>Error loading data</p>;
+
   return (
     <div className="flex w-screen justify-center items-center">
       <div className="p-4 gap-3 w-full max-w-7xl flex-col">
+        <div className="flex justify-between w-full">
+          <div className="pb-4 font-semibold tracking-widest flex items-center">
+            USERS PAGE -
+          </div>
+          <Link href={`${pathName}/analytics`}>
+            <div className="text-sm items-center hover:text-blue-500 flex gap-2">
+              <ArrowRight size={18} />
+              <div>Analytics Page</div>
+            </div>
+          </Link>
+        </div>
         <div className="flex items-end justify-between pb-4">
           <div className="flex gap-2 flex-col justify-start md:flex-row">
             <Input
@@ -614,6 +632,7 @@ const UsersPage = () => {
             </Select>
             <div className="flex w-full items-center md:justify-start justify-between gap-4">
               <Button
+                variant="secondary"
                 onClick={() => {
                   setDebouncedSearch("");
                   setSearchInput("");
@@ -623,42 +642,56 @@ const UsersPage = () => {
                 Clear Filter
               </Button>
               {!mutateData ? (
-                <DatabaseZap
-                  onLoad={() => <Spinner />}
-                  className="cursor-pointer"
-                  onClick={() => {
-                    // @ts-expect-error:error
-                    if (data?.length < 1) {
-                      toast.error(
-                        "No data available to mutate, kindly add one"
-                      );
-                    } else {
-                      handleDataRefresh(
+                <Tooltip>
+                  <TooltipContent>
+                    <p>Automated mutate data</p>
+                  </TooltipContent>
+                  <TooltipTrigger asChild>
+                    <DatabaseZap
+                      onLoad={() => <Spinner />}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        // @ts-expect-error:error
+                        if (data?.length < 1) {
+                          toast.error(
+                            "No data available to mutate, kindly add one"
+                          );
+                        } else {
+                          handleDataRefresh(
+                            checkboxClicked.length > 0
+                              ? checkboxClicked
+                              : data && data.length > 0
+                              ? data
+                              : []
+                          );
+                        }
+                      }}
+                    />
+                  </TooltipTrigger>
+                </Tooltip>
+              ) : (
+                <Spinner />
+              )}
+              <Tooltip>
+                <TooltipContent>
+                  <p>Download CSV</p>
+                </TooltipContent>
+                <TooltipTrigger>
+                  <DownloadIcon
+                    onLoad={() => <Spinner />}
+                    className="cursor-pointer"
+                    onClick={() =>
+                      handleExportCSV(
                         checkboxClicked.length > 0
                           ? checkboxClicked
                           : data && data.length > 0
                           ? data
                           : []
-                      );
+                      )
                     }
-                  }}
-                />
-              ) : (
-                <Spinner />
-              )}
-              <DownloadIcon
-                onLoad={() => <Spinner />}
-                className=""
-                onClick={() =>
-                  handleExportCSV(
-                    checkboxClicked.length > 0
-                      ? checkboxClicked
-                      : data && data.length > 0
-                      ? data
-                      : []
-                  )
-                }
-              />
+                  />
+                </TooltipTrigger>
+              </Tooltip>
             </div>
           </div>
           <NavigationMenu>
@@ -838,6 +871,12 @@ const UsersPage = () => {
                     </TableCell>
                   </TableRow>
                 ))
+              ) : isPending ? (
+                <TableRow>
+                  <TableCell className="text-center">
+                    <Spinner />
+                  </TableCell>
+                </TableRow>
               ) : (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center">
@@ -965,7 +1004,7 @@ const UsersPage = () => {
                       Created At
                     </div>
                     <div className="text-sm text-slate-900 font-medium">
-                      {dayjs(selectedUser?.createdAt).format("DD-MM-YY")}
+                      {selectedUser?.createdAt}
                     </div>
                   </div>
                 </div>

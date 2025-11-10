@@ -11,7 +11,7 @@ const PageLayout = ({ children }: { children: React.ReactNode }) => {
       className="flex min-h-screen justify-between flex-col pt-1"
       suppressHydrationWarning
     >
-      <div suppressHydrationWarning className="flex flex-col gap-6">
+      <div suppressHydrationWarning className="flex flex-col gap-2">
         <Header />
         <Toaster position="top-center" />
         <QueryClientProvider client={queryClient}>
