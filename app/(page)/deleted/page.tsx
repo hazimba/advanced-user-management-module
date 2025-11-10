@@ -151,7 +151,7 @@ const PermissionPage = () => {
         <TableBody>
           {data?.length > 0 ? (
             <>
-              {data?.map((du: User, index: number) => (
+              {data?.map((du: User[] | any, index: number) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">{du.name}</TableCell>
                   <TableCell>{du.phoneNumber}</TableCell>
@@ -161,7 +161,6 @@ const PermissionPage = () => {
                       className="cursor-pointer"
                       size={"15"}
                       onClick={async () => {
-                        // @ts-expect-error:nocare
                         await mutationRestore.mutateAsync(du);
                         await mutationDelPerm.mutateAsync(du);
                       }}
