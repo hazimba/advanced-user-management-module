@@ -825,13 +825,18 @@ const UsersPage = () => {
                       className="flex justify-end gap-4"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Edit2Icon
-                        className="cursor-pointer size-4"
-                        onClick={() => {
-                          setSelectedEditUser(user);
-                          setOpenCreateUser(true);
-                        }}
-                      />
+                      <Tooltip>
+                        <TooltipContent>Edit {user.name}</TooltipContent>
+                        <TooltipTrigger>
+                          <Edit2Icon
+                            className="cursor-pointer size-4"
+                            onClick={() => {
+                              setSelectedEditUser(user);
+                              setOpenCreateUser(true);
+                            }}
+                          />
+                        </TooltipTrigger>
+                      </Tooltip>
                       <Popover
                         // @ts-expect-error:if-not-will-render-all
                         open={popoverDeleteOne === user.id}
@@ -841,10 +846,15 @@ const UsersPage = () => {
                         }
                       >
                         <PopoverTrigger>
-                          <Trash2Icon
-                            className="cursor-pointer size-4"
-                            onClick={() => setPopoverDeleteOne(true)}
-                          />
+                          <Tooltip>
+                            <TooltipContent>Delete {user.name}</TooltipContent>
+                            <TooltipTrigger asChild>
+                              <Trash2Icon
+                                className="cursor-pointer size-4"
+                                onClick={() => setPopoverDeleteOne(true)}
+                              />
+                            </TooltipTrigger>
+                          </Tooltip>
                         </PopoverTrigger>
                         <PopoverContent
                           side="left"
@@ -918,7 +928,6 @@ const UsersPage = () => {
           setSelectedEditUser={setSelectedEditUser}
         />
         <Dialog open={openModal} onOpenChange={setOpenModal}>
-          <DialogTrigger asChild></DialogTrigger>
           <DialogContent className="sm:max-w-xl max-h-[600px] overflow-auto">
             <DialogHeader className="lg:space-y-3">
               <DialogTitle className="lg:text-2xl">User Details</DialogTitle>
