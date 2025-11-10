@@ -1,8 +1,7 @@
 "use client";
-import { Cell, Pie, PieChart, PieLabelRenderProps } from "recharts";
-import { Spinner } from "./ui/spinner";
-import { memo } from "react";
 import { User } from "@/app/types";
+import { memo } from "react";
+import { Cell, Pie, PieChart, PieLabelRenderProps } from "recharts";
 
 const RADIAN = Math.PI / 180;
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];

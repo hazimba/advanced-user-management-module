@@ -15,6 +15,11 @@ import { CornerDownLeft, Trash } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { FormSchema } from "../users/page";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const PermissionPage = () => {
   const queryClient = useQueryClient();
@@ -112,8 +117,11 @@ const PermissionPage = () => {
   };
 
   return (
-    <div className="max-h-screen h-120 flex flex-col justify center p-4 gap-3">
-      <div className="flex w-full justify-end gap-3">
+    <div className="max-h-screen h-120 flex flex-col justify center p-4">
+      <div className="pb-4 font-semibold tracking-widest flex items-center">
+        DELETED USERS PAGE -
+      </div>
+      <div className="flex w-full justify-between gap-3 pb-4">
         <Button
           disabled={recoverLoading}
           variant="outline"
@@ -139,7 +147,7 @@ const PermissionPage = () => {
         </Button>
       </div>
       <Table>
-        <TableCaption>A list of your recent deleted users.</TableCaption>
+        <TableCaption>A list of recent deleted users.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">NAME</TableHead>
@@ -157,21 +165,33 @@ const PermissionPage = () => {
                   <TableCell>{du.phoneNumber}</TableCell>
                   <TableCell className="text-left">{du.email}</TableCell>
                   <TableCell className="text-right flex gap-4">
-                    <CornerDownLeft
-                      className="cursor-pointer"
-                      size={"15"}
-                      onClick={async () => {
-                        await mutationRestore.mutateAsync(du);
-                        await mutationDelPerm.mutateAsync(du);
-                      }}
-                    />
-                    <Trash
-                      className="cursor-pointer"
-                      size={"15"}
-                      onClick={async () => {
-                        await mutationDelPerm.mutateAsync(du);
-                      }}
-                    />
+                    <Tooltip>
+                      <TooltipContent>Recover {`${du.name}`}</TooltipContent>
+                      <TooltipTrigger asChild>
+                        <CornerDownLeft
+                          className="cursor-pointer"
+                          size={"15"}
+                          onClick={async () => {
+                            await mutationRestore.mutateAsync(du);
+                            await mutationDelPerm.mutateAsync(du);
+                          }}
+                        />
+                      </TooltipTrigger>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipContent>
+                        Permanantly delete {`${du.name}`}
+                      </TooltipContent>
+                      <TooltipTrigger asChild>
+                        <Trash
+                          className="cursor-pointer"
+                          size={"15"}
+                          onClick={async () => {
+                            await mutationDelPerm.mutateAsync(du);
+                          }}
+                        />
+                      </TooltipTrigger>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))}

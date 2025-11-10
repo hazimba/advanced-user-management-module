@@ -11,8 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 const AnalyticsPage = () => {
@@ -30,7 +33,12 @@ const AnalyticsPage = () => {
   });
 
   if (error) return <>Error fetch data...</>;
-  if (isPending) return <>Loading...</>;
+  if (isPending)
+    return (
+      <div className="px-4">
+        <Spinner />
+      </div>
+    );
 
   const { active, role, date } = data;
 
@@ -72,11 +80,16 @@ const AnalyticsPage = () => {
   return (
     <div className="w-screen px-4 flex justify-center">
       <Tabs defaultValue="role" className="max-w-7xl w-full py-2">
-        <TabsList>
-          <TabsTrigger value="role">Role</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="registration">Registration</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-4">
+          <Link href="/users">
+            <ArrowLeft />
+          </Link>
+          <TabsList>
+            <TabsTrigger value="role">Role</TabsTrigger>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="registration">Registration</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="role" className="w-full">
           <Card className="md:h-[600px]">
             <CardHeader>
