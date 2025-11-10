@@ -1,45 +1,30 @@
-import Image from "next/image";
+import ModeToggle from "@/components/mode-toggle";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-7xl flex-col items-center justify-between md:py-32 p-4 pt-16 text-justify md:px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert hidden md:block"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-2 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-2xl font-semibold leading-10 tracking-tight text-left text-black dark:text-zinc-50">
-            Front-End Developer Assessment — User Management Module
-          </h1>
-          <p className="max-w-md text-lg text-left text-zinc-400 dark:text-zinc-400">
-            Build an advanced User Management Module with full CRUD
-            functionality, optimistic updates, concurrent mutation handling, and
-            undo capabilities using React, TypeScript, Tailwind CSS, Shadcn UI,
-            and TanStack React Query.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium items-start justify-start sm:flex-row">
-          <Link
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="/users"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className=""
-              src="/favicon.ico"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            User Page
-          </Link>
-        </div>
+    <div className="flex justify-center items-center min-h-screen bg-zinc-200 px-2 font-sans dark:bg-black">
+      <main className="flex flex-col  justify-center max-w-7xl w-full px-6 py-16 text-center bg-white dark:bg-black rounded-lg">
+        <ModeToggle toggle />
+        <h1 className="text-2xl pt-8 md:text-4xl align-left text-left font-semibold leading-tight tracking-tight text-black dark:text-zinc-50 mb-6">
+          Front-End Developer Assessment — User Management Module
+        </h1>
+
+        <p className="max-w-2xl text-lg text-justify text-zinc-600 dark:text-zinc-400 mb-10">
+          Build an advanced User Management Module with full CRUD functionality,
+          optimistic updates, concurrent mutation handling, and undo
+          capabilities using React, TypeScript, Tailwind CSS, Shadcn UI, and
+          TanStack React Query.
+        </p>
+
+        <Link
+          className="flex h-12 w-[180px] items-center justify-center gap-2 text-black hover:text-blue-600 dark:text-white transition-colors"
+          href="/users"
+          rel="noopener noreferrer"
+        >
+          Go User Page <ArrowRight />
+        </Link>
       </main>
     </div>
   );
