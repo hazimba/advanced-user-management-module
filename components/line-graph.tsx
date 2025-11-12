@@ -35,7 +35,7 @@ const Example = ({ data }) => {
       <Legend />
       <Line
         type="monotone"
-        dataKey="pv"
+        dataKey="registration"
         stroke="#8884d8"
         activeDot={{ r: 8 }}
       />

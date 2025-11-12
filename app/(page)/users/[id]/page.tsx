@@ -38,7 +38,7 @@ const IdPage = () => {
         <div className="text-lg font-semibold">User Update Successfully</div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 dark:bg-gray-800 p-6 rounded-2xl shadow-md max-w-2xl">
+      <div className="flex flex-col sm:flex-row items-start w-full sm:items-center gap-6 dark:bg-gray-800 p-6 rounded-2xl shadow-xl">
         <Image
           src={user.avatar}
           alt={user.name}

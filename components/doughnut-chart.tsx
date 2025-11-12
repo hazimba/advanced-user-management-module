@@ -1,12 +1,6 @@
-import {
-  Pie,
-  PieChart,
-  Sector,
-  SectorProps,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { TooltipIndex } from "recharts/types/state/tooltipSlice";
+"use client";
+import { capitalize } from "lodash";
+import { Pie, PieChart, Sector, SectorProps, Tooltip } from "recharts";
 
 type Coordinate = {
   x: number;
@@ -59,7 +53,7 @@ const renderActiveShape = ({
   return (
     <g>
       <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill}>
-        {payload.name}
+        Status
       </text>
       <Sector
         cx={cx}
@@ -90,7 +84,7 @@ const renderActiveShape = ({
         y={ey}
         textAnchor={textAnchor}
         fill="#333"
-      >{`PV ${value}`}</text>
+      >{`${capitalize(payload.name)} ${value}`}</text>
       <text
         x={ex + (cos >= 0 ? 1 : -1) * 12}
         y={ey}
@@ -98,7 +92,7 @@ const renderActiveShape = ({
         textAnchor={textAnchor}
         fill="#999"
       >
-        {`(Rate ${((percent ?? 1) * 100).toFixed(2)}%)`}
+        {`(${((percent ?? 1) * 100).toFixed(2)}%)`}
       </text>
     </g>
   );
@@ -106,24 +100,31 @@ const renderActiveShape = ({
 
 export default function CustomActiveShapePieChart({
   data,
+  activeClick,
+  setActiveClick,
   isAnimationActive = true,
-  defaultIndex = undefined,
 }: {
   data: any;
+  activeClick: number;
+  setActiveClick: (arg0: number) => void;
   isAnimationActive?: boolean;
-  defaultIndex?: TooltipIndex;
 }) {
+  console.log("activeClick", activeClick);
   return (
-    // <ResponsiveContainer width="100%" height={400}>
     <PieChart
       height={300}
       width={400}
+      onClick={(e) => {
+        // @ts-expect-error:weirderror
+        setActiveClick(e.activeLabel);
+        console.log(e);
+      }}
       responsive
       margin={{
-        top: 70,
-        right: 70,
-        bottom: 70,
-        left: 70,
+        top: 100,
+        right: 100,
+        bottom: 100,
+        left: 100,
       }}
     >
       <Pie
@@ -131,14 +132,19 @@ export default function CustomActiveShapePieChart({
         data={data}
         cx="50%"
         cy="50%"
-        innerRadius="60%"
+        innerRadius="70%"
         outerRadius="100%"
         fill="#8884d8"
         dataKey="value"
         isAnimationActive={isAnimationActive}
+        onClick={(props) => console.log("props", props)}
       />
-      <Tooltip content={() => null} defaultIndex={defaultIndex} />
+      <Tooltip
+        defaultIndex={activeClick}
+        content={() => null}
+        trigger="click"
+        active={true}
+      />
     </PieChart>
-    // </ResponsiveContainer>
   );
 }
