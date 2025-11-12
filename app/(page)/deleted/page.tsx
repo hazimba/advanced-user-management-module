@@ -117,100 +117,102 @@ const PermissionPage = () => {
   };
 
   return (
-    <div className="max-h-screen h-186 flex flex-col justify center p-4">
-      <div className="pb-4 font-semibold tracking-widest flex items-center">
-        DELETED USERS PAGE -
-      </div>
-      <div className="flex w-full justify-between gap-3 pb-4">
-        <Button
-          disabled={recoverLoading}
-          variant="outline"
-          className="cursor-pointer"
-          onClick={() => handleRecoverAll(data)}
-        >
-          {recoverLoading ? "Recovering..." : "Recover All"}
-        </Button>
-        <Button
-          disabled={loading}
-          className="cursor-pointer"
-          variant="destructive"
-          onClick={async () => {
-            if (data?.length < 1) {
-              return toast.error("No data to delete pemanently");
-            } else {
-              setLoading(true);
-              await mutationDelPerm.mutateAsync(data);
-            }
-          }}
-        >
-          {loading ? "Deleting..." : "Delete All"}
-        </Button>
-      </div>
-      <Table>
-        <TableCaption>A list of recent deleted users.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px]">NAME</TableHead>
-            <TableHead>PHONE NO</TableHead>
-            <TableHead className="text-left">EMAIL</TableHead>
-            <TableHead>ACTION</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data && data?.length > 0 ? (
-            <>
-              {data?.map((du: User[] | any, index: number) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{du.name}</TableCell>
-                  <TableCell>{du.phoneNumber}</TableCell>
-                  <TableCell className="text-left">{du.email}</TableCell>
-                  <TableCell className="text-right flex gap-4">
-                    <Tooltip>
-                      <TooltipContent>Recover {`${du.name}`}</TooltipContent>
-                      <TooltipTrigger asChild>
-                        <CornerDownLeft
-                          className="cursor-pointer"
-                          size={"15"}
-                          onClick={async () => {
-                            await mutationRestore.mutateAsync(du);
-                            await mutationDelPerm.mutateAsync(du);
-                          }}
-                        />
-                      </TooltipTrigger>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipContent>
-                        Permanantly delete {`${du.name}`}
-                      </TooltipContent>
-                      <TooltipTrigger asChild>
-                        <Trash
-                          className="cursor-pointer"
-                          size={"15"}
-                          onClick={async () => {
-                            await mutationDelPerm.mutateAsync(du);
-                          }}
-                        />
-                      </TooltipTrigger>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </>
-          ) : isPending ? (
+    <div className="max-h-screen h-186 w-screen flex flex-col items-center p-4">
+      <div className="max-w-7xl w-full md:px-4 px-2 flex justify-center flex-col">
+        <div className="pb-4 font-semibold tracking-widest flex items-center">
+          DELETED USERS PAGE -
+        </div>
+        <div className="flex w-full justify-between gap-3 pb-4">
+          <Button
+            disabled={recoverLoading}
+            variant="outline"
+            className="cursor-pointer"
+            onClick={() => handleRecoverAll(data)}
+          >
+            {recoverLoading ? "Recovering..." : "Recover All"}
+          </Button>
+          <Button
+            disabled={loading}
+            className="cursor-pointer"
+            variant="destructive"
+            onClick={async () => {
+              if (data?.length < 1) {
+                return toast.error("No data to delete pemanently");
+              } else {
+                setLoading(true);
+                await mutationDelPerm.mutateAsync(data);
+              }
+            }}
+          >
+            {loading ? "Deleting..." : "Delete All"}
+          </Button>
+        </div>
+        <Table>
+          <TableCaption>A list of recent deleted users.</TableCaption>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={3} className="text-center">
-                Loading...
-              </TableCell>
+              <TableHead className="w-[100px]">NAME</TableHead>
+              <TableHead>PHONE NO</TableHead>
+              <TableHead className="text-left">EMAIL</TableHead>
+              <TableHead>ACTION</TableHead>
             </TableRow>
-          ) : (
-            <TableRow>
-              <TableCell colSpan={3} className="text-center">
-                No data to display
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {data && data?.length > 0 ? (
+              <>
+                {data?.map((du: User[] | any, index: number) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{du.name}</TableCell>
+                    <TableCell>{du.phoneNumber}</TableCell>
+                    <TableCell className="text-left">{du.email}</TableCell>
+                    <TableCell className="text-right flex gap-4">
+                      <Tooltip>
+                        <TooltipContent>Recover {`${du.name}`}</TooltipContent>
+                        <TooltipTrigger asChild>
+                          <CornerDownLeft
+                            className="cursor-pointer"
+                            size={"15"}
+                            onClick={async () => {
+                              await mutationRestore.mutateAsync(du);
+                              await mutationDelPerm.mutateAsync(du);
+                            }}
+                          />
+                        </TooltipTrigger>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipContent>
+                          Permanantly delete {`${du.name}`}
+                        </TooltipContent>
+                        <TooltipTrigger asChild>
+                          <Trash
+                            className="cursor-pointer"
+                            size={"15"}
+                            onClick={async () => {
+                              await mutationDelPerm.mutateAsync(du);
+                            }}
+                          />
+                        </TooltipTrigger>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </>
+            ) : isPending ? (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center">
+                  No data to display
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
