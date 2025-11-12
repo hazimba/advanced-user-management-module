@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <div className="flex justify-center items-center min-h-screen bg-zinc-50 px-2 font-sans dark:bg-black">
       <main className="flex flex-col  justify-center max-w-7xl w-full px-6 shadow-xl pb-16 pt-8 text-center bg-white dark:bg-black rounded-lg">
-        <ModeToggle toggle />
+        {/* <ModeToggle toggle /> */}
         <h1 className="text-2xl pt-8 md:text-4xl md:pr-24 align-left text-left font-semibold leading-tight tracking-tight text-black dark:text-zinc-50 mb-6">
           Frontend Developer Assessment — User Management Module
         </h1>
