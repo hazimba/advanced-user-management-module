@@ -4,6 +4,7 @@ import Example from "@/components/line-graph";
 import PieChartWithCustomizedLabel from "@/components/pie-chart";
 
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -11,28 +12,58 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DialogTitle } from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar1 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import dayjs from "dayjs";
+
+interface FormSchema {
+  dateRange: {
+    from: Date;
+    to: Date;
+  };
+}
 
 const AnalyticsPage = () => {
+  const form = useForm();
   const [roleClick, setRoleClick] = useState<string>("guest");
-  const [activeClick, setActiveClick] = useState<string>("active");
-  const { isPending, data, error } = useQuery({
-    queryKey: ["users"],
+  const [activeClick, setActiveClick] = useState<number>(0);
+  const [filterDate, setFilterDate] = useState<{
+    fromDate?: string;
+    toDate?: string;
+  }>({
+    fromDate: "01-01-2020",
+    toDate: dayjs().format("DD-MM-YYYY"),
+  });
+  const { data, isPending, error } = useQuery({
+    queryKey: ["users", filterDate],
     queryFn: async () => {
-      const res = await fetch("/api/analytics");
+      const params = new URLSearchParams();
+      if (filterDate.fromDate) params.append("from", filterDate.fromDate);
+      if (filterDate.toDate) params.append("to", filterDate.toDate);
 
-      if (!res.ok) throw new Error("Unable to fetch data");
-
+      const res = await fetch(`/api/analytics?${params.toString()}`);
+      if (!res.ok) throw new Error("Unable to fetch analytics data");
       return res.json();
     },
+    enabled: !!(filterDate.fromDate && filterDate.toDate), // only fetch if both dates set
   });
 
-  if (error) return <>Error fetch data...</>;
+  if (error) return <>{error.message}</>;
   if (isPending)
     return (
       <div className="px-4">
@@ -63,7 +94,7 @@ const AnalyticsPage = () => {
         .map(([date, users]) => ({
           name: date,
           // @ts-expect-error:nocare
-          pv: users?.length,
+          registration: users?.length,
         }))
         .sort((a, b) => {
           const [dayA, monthA, yearA] = a.name.split("-").map(Number);
@@ -76,6 +107,15 @@ const AnalyticsPage = () => {
           return dateA - dateB;
         })
     : [];
+
+  console.log("data", data);
+
+  const onSubmit: SubmitHandler<FormSchema> = async (value: FormSchema) => {
+    const toDate = dayjs(value?.dateRange.to).format("DD-MM-YYYY");
+    const fromDate = dayjs(value.dateRange.from).format("DD-MM-YYYY");
+
+    setFilterDate({ toDate: toDate, fromDate: fromDate });
+  };
 
   return (
     <div className="w-screen px-4 flex justify-center">
@@ -98,7 +138,10 @@ const AnalyticsPage = () => {
             </CardHeader>
             <CardContent className="grid md:grid-cols-5 grid-cols-1 items-center h-full">
               <div className="col-span-3 w-full align-center text-center flex items-center justify-center">
-                <PieChartWithCustomizedLabel data={seggData} />
+                <PieChartWithCustomizedLabel
+                  data={seggData}
+                  roleClick={roleClick}
+                />
               </div>
               <div className="col-span-2 flex flex-col justify-center space-y-3">
                 {seggData.map((i) => (
@@ -124,15 +167,19 @@ const AnalyticsPage = () => {
             </CardHeader>
             <CardContent className="grid md:grid-cols-5 grid-cols-1 items-center h-full">
               <div className="col-span-3 w-full align-center text-center flex items-center justify-center">
-                <CustomActiveShapePieChart data={seggActive} />
+                <CustomActiveShapePieChart
+                  data={seggActive}
+                  activeClick={activeClick}
+                  setActiveClick={setActiveClick}
+                />
               </div>
               <div className="col-span-2 flex flex-col justify-center space-y-3">
-                {seggActive.map((i) => (
+                {seggActive.map((i, index) => (
                   <Button
                     key={i.name}
-                    variant={activeClick === i.name ? "default" : "outline"}
+                    variant={activeClick === index ? "default" : "outline"}
                     className="flex justify-between items-center border rounded-md"
-                    onClick={() => setActiveClick(i.name)}
+                    onClick={() => setActiveClick(index)}
                   >
                     <span className="font-medium capitalize">{i.name}</span>
                     <span className="">{i.value}</span>
@@ -143,10 +190,49 @@ const AnalyticsPage = () => {
           </Card>
         </TabsContent>
         <TabsContent value="registration">
-          <Card className="md:h-[600px]">
+          <Card className="md:min-h-[600px] md:h-full">
             <CardHeader>
               <CardTitle>User Registration</CardTitle>
               <CardDescription>User registration over time</CardDescription>
+              <Dialog>
+                <DialogTrigger>
+                  <Calendar1 />
+                </DialogTrigger>
+                <DialogContent className="!w-auto !max-w-fit p-6">
+                  <DialogTitle className="mb-4">Filter Date</DialogTitle>
+                  <Form {...form}>
+                    <form
+                      className="flex flex-col gap-2"
+                      // @ts-expect-error:typeerrornoidea
+                      onSubmit={form.handleSubmit(onSubmit)}
+                    >
+                      <FormField
+                        control={form.control}
+                        name="dateRange"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Calendar</FormLabel>
+                            <FormControl>
+                              <Calendar
+                                mode="range"
+                                defaultMonth={field.value?.from}
+                                selected={field.value}
+                                onSelect={(range) => field.onChange(range)}
+                                numberOfMonths={2}
+                                className="rounded-lg border shadow-sm bg-white"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button className="" type="submit">
+                        Filter
+                      </Button>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
             </CardHeader>
             <CardContent className="grid md:grid-cols-5 grid-cols-1 items-center h-full">
               <div className="col-span-3 w-full align-center text-center flex items-center justify-center">
@@ -156,12 +242,12 @@ const AnalyticsPage = () => {
                 {seggDate.map((i) => (
                   <Button
                     key={i.name}
-                    variant={activeClick === i.name ? "default" : "outline"}
+                    variant={"outline"}
                     className="flex justify-between items-center border rounded-md"
-                    onClick={() => setActiveClick(i.name)}
+                    // onClick={() => setActiveClick(i.name)}
                   >
                     <span className="font-medium capitalize">{i.name}</span>
-                    <span className="">{i.pv}</span>
+                    <span className="">{i.registration}</span>
                   </Button>
                 ))}
               </div>

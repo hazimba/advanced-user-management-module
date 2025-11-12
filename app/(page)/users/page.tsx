@@ -1,6 +1,5 @@
 "use client";
 import { User } from "@/app/types";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Pagination,
@@ -20,6 +18,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { saveAs } from "file-saver";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -65,6 +64,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { handleFileSelect } from "@/hooks/handleFileSelect";
 import { useUserStore } from "@/hooks/user-store";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -81,7 +85,7 @@ import {
   Fingerprint,
   Mail,
   Phone,
-  PlusIcon,
+  PlusCircleIcon,
   Shield,
   Trash2Icon,
   User as UserIcon,
@@ -90,12 +94,6 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 enum Role {
   admin = "admin",
@@ -103,17 +101,22 @@ enum Role {
   guest = "guest",
 }
 
+enum Active {
+  active = "active",
+  inactive = "inactive",
+}
+
 const formSchema = z.object({
   uuid: z.any(),
-  name: z.string().optional(), // .min(2, "min 2 char").max(50),
+  name: z.string().min(2, "min 2 char").max(50),
   avatar: z.string().optional(),
   phoneNumber: z.string().optional(),
-  role: z.enum(Role, "select one role").optional(),
-  bio: z.string(), // .min(1, "add bio").max(500),
-  id: z.string().optional(),
-  createdAt: z.any().optional(),
-  active: z.string().optional(),
-  email: z.string().optional(), // email("invalid email"),
+  role: z.enum(Role, "select one role"),
+  bio: z.string().min(1, "add bio").max(500),
+  id: z.string(),
+  createdAt: z.any(),
+  active: z.enum(Active, "select status"),
+  email: z.email("invalid email"),
 });
 
 export type FormSchema = z.infer<typeof formSchema>;
@@ -167,7 +170,7 @@ const FormCreateEditUser = ({
       setLoading(false);
       form.reset({
         name: "",
-        active: "",
+        active: Active.active,
         avatar: "",
         phoneNumber: "",
         email: "",
@@ -210,6 +213,7 @@ const FormCreateEditUser = ({
       form.reset({
         ...selectedEditUser,
         role: selectedEditUser.role as Role,
+        active: selectedEditUser.active as Active,
       });
     }
   }, [openCreateUser, selectedEditUser, form]);
@@ -219,7 +223,17 @@ const FormCreateEditUser = ({
       open={openCreateUser}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          form.reset({});
+          form.reset({
+            name: "",
+            active: Active.active,
+            avatar: "",
+            phoneNumber: "",
+            email: "",
+            role: undefined,
+            bio: "",
+            id: "",
+            createdAt: "",
+          });
           setSelectedEditUser(undefined);
         }
         setOpenCreateUser(isOpen);
@@ -231,7 +245,9 @@ const FormCreateEditUser = ({
             {!selectedEditUser ? "Create User" : "Edit User"}
           </DialogTitle>
           <DialogDescription>
-            Make changes to your profile here. Click save when you&apos;re done.
+            {!selectedEditUser
+              ? "Add a new user to your organization."
+              : "Edit the selected user's details."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -270,7 +286,13 @@ const FormCreateEditUser = ({
                   <FormItem>
                     <FormLabel>Avatar</FormLabel>
                     <FormControl>
-                      <ImageUploadForm setFile={setFile} form={form} />
+                      <ImageUploadForm
+                        setFile={setFile}
+                        form={form}
+                        selectedEditUser={
+                          selectedEditUser ? selectedEditUser : []
+                        }
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -377,9 +399,11 @@ const FormCreateEditUser = ({
                 </FormItem>
               )}
             />
-            <Button disabled={loading} type="submit">
-              {loading ? <Spinner /> : selectedEditUser ? "Edit" : "Create"}
-            </Button>
+            <div className="flex w-full justify-end">
+              <Button disabled={loading} type="submit" className="">
+                {loading ? <Spinner /> : selectedEditUser ? "Update" : "Create"}
+              </Button>
+            </div>
           </form>
         </Form>
       </DialogContent>
@@ -423,7 +447,7 @@ const UsersPage = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      active: "",
+      active: Active.active,
       avatar: "",
       phoneNumber: "",
       email: "",
@@ -439,7 +463,7 @@ const UsersPage = () => {
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(page),
-        limit: "30",
+        limit: "50",
       });
 
       if (debouncedSearch) params.append("name", debouncedSearch);
@@ -512,27 +536,31 @@ const UsersPage = () => {
 
   const handleDeleteUser = async (user: string[] | string) => {
     setPermDelete(true);
+    const isArray = Array.isArray(user);
 
     toast.info(
       <div className="flex items-center w-full justify-between gap-3 text-sm">
         <span className="text-foreground">Removing selected user...</span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-6 px-2 py-1 text-xs"
-          onClick={() => {
-            return setPermDelete(false);
-          }}
-        >
-          Undo
-        </Button>
+        {isArray ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 px-2 py-1 text-xs"
+            onClick={() => {
+              return setPermDelete(false);
+            }}
+          >
+            Undo
+          </Button>
+        ) : (
+          <></>
+        )}
       </div>,
-      { duration: 5000 }
+      { duration: isArray ? 5000 : 1000 }
     );
 
     try {
       setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       if (!permDeleteRef.current) {
         toast.success("Successfully not proceed to delete");
@@ -602,15 +630,15 @@ const UsersPage = () => {
           </div>
           <Link href={`${pathName}/analytics`}>
             <div className="text-sm items-center hover:text-blue-500 flex gap-2">
+              <div className="text-xs">Analytics Page</div>
               <ArrowRight size={18} />
-              <div>Analytics Page</div>
             </div>
           </Link>
         </div>
         <div className="flex items-end justify-between pb-4">
           <div className="flex gap-2 flex-col justify-start md:flex-row">
             <Input
-              className="w-50 text-sm"
+              className="w-60 text-sm"
               onChange={(e) => setSearchInput(e.target.value)}
               value={searchInput}
               placeholder="Search user..."
@@ -619,7 +647,7 @@ const UsersPage = () => {
               onValueChange={(value) => setSelectInput(value)}
               value={selectInput}
             >
-              <SelectTrigger className="w-50">
+              <SelectTrigger className="w-60">
                 <SelectValue placeholder="Select a role..." />
               </SelectTrigger>
               <SelectContent>
@@ -630,8 +658,9 @@ const UsersPage = () => {
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <div className="flex w-full items-center md:justify-start justify-between gap-4">
+            <div className="flex w-full items-center justify-start gap-4">
               <Button
+                className="cursor-pointer hover:bg-gray-200 flex-1 md:flex-none"
                 variant="secondary"
                 onClick={() => {
                   setDebouncedSearch("");
@@ -639,7 +668,7 @@ const UsersPage = () => {
                   setSelectInput("");
                 }}
               >
-                Clear Filter
+                Clear
               </Button>
               {!mutateData ? (
                 <Tooltip>
@@ -649,7 +678,7 @@ const UsersPage = () => {
                   <TooltipTrigger asChild>
                     <DatabaseZap
                       onLoad={() => <Spinner />}
-                      className="cursor-pointer"
+                      className="cursor-pointer hover:text-blue-500"
                       onClick={() => {
                         // @ts-expect-error:error
                         if (data?.length < 1) {
@@ -679,7 +708,7 @@ const UsersPage = () => {
                 <TooltipTrigger>
                   <DownloadIcon
                     onLoad={() => <Spinner />}
-                    className="cursor-pointer"
+                    className="cursor-pointer hover:text-green-500"
                     onClick={() =>
                       handleExportCSV(
                         checkboxClicked.length > 0
@@ -698,26 +727,21 @@ const UsersPage = () => {
             <NavigationMenuList>
               <NavigationMenuItem className="flex gap-4">
                 <NavigationMenuLink asChild>
-                  {/* <Link className="flex flex-row items-center"> */}
-                  <Button variant="outline">
-                    <span
-                      className="block md:hidden "
-                      onClick={() => {
-                        setOpenCreateUser(true);
-                      }}
-                    >
-                      <PlusIcon />
-                    </span>
-                    <span
-                      className="hidden md:block"
-                      onClick={() => {
-                        setOpenCreateUser(true);
-                      }}
-                    >
-                      Add New User
-                    </span>
-                  </Button>
-                  {/* </Link> */}
+                  <Tooltip>
+                    <TooltipContent side="left" align="center">
+                      Add new user
+                    </TooltipContent>
+                    <TooltipTrigger asChild>
+                      <div
+                        className=""
+                        onClick={() => {
+                          setOpenCreateUser(true);
+                        }}
+                      >
+                        <PlusCircleIcon size={60} className="!h-5 !w-5 " />
+                      </div>
+                    </TooltipTrigger>
+                  </Tooltip>
                 </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
@@ -741,7 +765,7 @@ const UsersPage = () => {
                   >
                     <PopoverTrigger>
                       {checkboxClicked.length > 0 && !loading ? (
-                        <Trash2Icon className="cursor-pointer size-4" />
+                        <Trash2Icon className="cursor-pointer size-4 hover:text-red-500" />
                       ) : loading ? (
                         <Spinner />
                       ) : (
@@ -777,10 +801,14 @@ const UsersPage = () => {
                     </PopoverContent>
                   </Popover>
                 </TableHead>
-                <TableHead>NAME</TableHead>
-                <TableHead className="hidden md:table-cell">PHONE</TableHead>
-                <TableHead className="hidden md:table-cell">ROLE</TableHead>
-                <TableHead className="text-right">ACTION</TableHead>
+                <TableHead className="font-bold">NAME</TableHead>
+                <TableHead className="hidden md:table-cell font-bold">
+                  PHONE
+                </TableHead>
+                <TableHead className="hidden md:table-cell font-bold">
+                  ROLE
+                </TableHead>
+                <TableHead className="text-right font-bold">ACTION</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -829,7 +857,7 @@ const UsersPage = () => {
                         <TooltipContent>Edit {user.name}</TooltipContent>
                         <TooltipTrigger>
                           <Edit2Icon
-                            className="cursor-pointer size-4"
+                            className="cursor-pointer size-4 hover:text-blue-500"
                             onClick={() => {
                               setSelectedEditUser(user);
                               setOpenCreateUser(true);
@@ -850,7 +878,7 @@ const UsersPage = () => {
                             <TooltipContent>Delete {user.name}</TooltipContent>
                             <TooltipTrigger asChild>
                               <Trash2Icon
-                                className="cursor-pointer size-4"
+                                className="cursor-pointer size-4 hover:text-red-500"
                                 onClick={() => setPopoverDeleteOne(true)}
                               />
                             </TooltipTrigger>

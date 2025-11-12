@@ -1,4 +1,5 @@
 "use client";
+import { User } from "@/app/types";
 import { Button } from "@/components/ui/button";
 import { Upload, X } from "lucide-react";
 import Image from "next/image";
@@ -7,9 +8,14 @@ import React, { useRef, useState } from "react";
 interface FileDropzoneProps {
   form: any;
   setFile?: (file: File | null) => void;
+  selectedEditUser: User | User[];
 }
 
-export function ImageUploadForm({ form, setFile }: FileDropzoneProps) {
+export function ImageUploadForm({
+  form,
+  setFile,
+  selectedEditUser,
+}: FileDropzoneProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const getAvatarUrl = form.watch("avatar");
@@ -30,10 +36,16 @@ export function ImageUploadForm({ form, setFile }: FileDropzoneProps) {
 
   const imageToShow = preview || getAvatarUrl;
 
+  const handleRemovePreview = (e: React.MouseEvent) => {
+    setPreview(null);
+    e.stopPropagation();
+    setFile?.(null);
+  };
+
   return (
     <div className="w-full">
       <div
-        className="border-2 border-dashed border-border rounded-md p-4 flex flex-col cursor-pointer relative overflow-hidden h-[100px] justify-center items-center"
+        className="border-2 border-dashed border-border rounded-md p-4 flex cursor-pointer relative overflow-hidden h-[100px] justify-center items-center"
         onClick={() => fileInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
       >
@@ -45,6 +57,18 @@ export function ImageUploadForm({ form, setFile }: FileDropzoneProps) {
               fill
               className="object-contain p-1"
             />
+            {/* @ts-expect-error:weird-error */}
+            {selectedEditUser?.avatar ? (
+              <></>
+            ) : (
+              <Button
+                onClick={handleRemovePreview}
+                variant="link"
+                className="z-10"
+              >
+                <X />
+              </Button>
+            )}
           </div>
         ) : (
           <div className="flex items-center h-full gap-2">

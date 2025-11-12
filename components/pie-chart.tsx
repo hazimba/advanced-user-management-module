@@ -1,5 +1,4 @@
 "use client";
-import { User } from "@/app/types";
 import { memo } from "react";
 import { Cell, Pie, PieChart, PieLabelRenderProps } from "recharts";
 
@@ -38,9 +37,11 @@ const renderCustomizedLabel = ({
 
 const PieChartWithCustomizedLabel = memo(function PieChartWithCustomizedLabel({
   data,
+  roleClick,
   isAnimationActive = true,
 }: {
   data: any;
+  roleClick: string;
   isAnimationActive?: boolean;
 }) {
   return (
@@ -62,10 +63,12 @@ const PieChartWithCustomizedLabel = memo(function PieChartWithCustomizedLabel({
           dataKey="value"
           isAnimationActive={isAnimationActive}
         >
-          {data?.map((entry: User, index: number) => (
+          {data?.map((entry: any, index: number) => (
             <Cell
               key={`cell-${entry.name}`}
               fill={COLORS[index % COLORS.length]}
+              strokeWidth={roleClick === entry.name ? 2 : 0}
+              stroke={roleClick === entry.name ? "#000" : "#fff"}
             />
           ))}
         </Pie>
