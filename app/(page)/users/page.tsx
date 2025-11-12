@@ -74,9 +74,12 @@ import { useUserStore } from "@/hooks/user-store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowDownAZ,
   ArrowRight,
+  ArrowUpAZ,
   Briefcase,
   CalendarPlus,
+  Check,
   ChevronDown,
   ChevronUp,
   DatabaseZap,
@@ -89,11 +92,12 @@ import {
   Shield,
   Trash2Icon,
   User as UserIcon,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
-import { z } from "zod";
+import { boolean, z } from "zod";
 
 enum Role {
   admin = "admin",
@@ -108,15 +112,15 @@ enum Active {
 
 const formSchema = z.object({
   uuid: z.any(),
-  name: z.string().min(2, "min 2 char").max(50),
+  name: z.string().min(2, "Min 2 char").max(50),
   avatar: z.string().optional(),
   phoneNumber: z.string().optional(),
-  role: z.enum(Role, "select one role"),
-  bio: z.string().min(1, "add bio").max(500),
+  role: z.enum(Role, "Role is required"),
+  bio: z.string().min(1, "Bio is required").max(500),
   id: z.string(),
   createdAt: z.any(),
-  active: z.enum(Active, "select status"),
-  email: z.email("invalid email"),
+  active: z.enum(Active, "Status is Required"),
+  email: z.email("Invalid email"),
 });
 
 export type FormSchema = z.infer<typeof formSchema>;
@@ -431,6 +435,7 @@ const UsersPage = () => {
   const [permDelete, setPermDelete] = useState<boolean>(true);
   const [mutateData, setMutateData] = useState<boolean>(false);
   const [popoverDeleteOne, setPopoverDeleteOne] = useState<boolean>(false);
+  const [selectAllDataset, setSelectAllDataset] = useState<boolean>(false);
 
   useEffect(() => {
     permDeleteRef.current = permDelete;
@@ -458,12 +463,15 @@ const UsersPage = () => {
     },
   });
 
+  const [orderName, setOrderName] = useState<boolean | undefined>();
+
   const { data, error, refetch, isPending } = useQuery({
-    queryKey: ["users", page, debouncedSearch, selectInput],
+    queryKey: ["users", page, debouncedSearch, selectInput, orderName],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(page),
-        limit: "50",
+        limit: "14",
+        orderName: String(orderName),
       });
 
       if (debouncedSearch) params.append("name", debouncedSearch);
@@ -484,7 +492,10 @@ const UsersPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          data,
+          selectAllDataset,
+        }),
       });
 
       if (!res.ok) throw new Error("Unable to mutate data");
@@ -504,11 +515,16 @@ const UsersPage = () => {
 
   const mutationDelete = useMutation({
     mutationFn: async (user: FormSchema) => {
+      setLoading(true);
       const res = await fetch("/api/users", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(user),
+        body: JSON.stringify({
+          user,
+          selectAllDataset,
+        }),
       });
+      console.log("res", res);
       if (!res.ok) throw new Error("Failed to delete user");
       return res.json();
     },
@@ -537,6 +553,7 @@ const UsersPage = () => {
   const handleDeleteUser = async (user: string[] | string) => {
     setPermDelete(true);
     const isArray = Array.isArray(user);
+    setLoading(true);
 
     toast.info(
       <div className="flex items-center w-full justify-between gap-3 text-sm">
@@ -547,7 +564,8 @@ const UsersPage = () => {
             size="sm"
             className="h-6 px-2 py-1 text-xs"
             onClick={() => {
-              return setPermDelete(false);
+              setPermDelete(false);
+              toast.info("Undo the deletion...");
             }}
           >
             Undo
@@ -560,7 +578,9 @@ const UsersPage = () => {
     );
 
     try {
-      setLoading(true);
+      if (isArray) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
 
       if (!permDeleteRef.current) {
         toast.success("Successfully not proceed to delete");
@@ -576,7 +596,10 @@ const UsersPage = () => {
         mutationDelete.mutateAsync(user);
       }
     } catch (error) {
+      toast.error("Something went wrong while deleting");
       console.error("error", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -601,9 +624,24 @@ const UsersPage = () => {
     await dataMutation.mutateAsync(data ? data : []);
   };
 
-  const handleExportCSV = (data: User[]) => {
+  const handleExportCSV = async (dt: User[]) => {
     setLoading(true);
-    if (!data) return;
+
+    let data = dt;
+    if (!dt) return toast.error("No data to export CSV");
+    if (selectAllDataset) {
+      const res = await fetch("/api/users");
+
+      if (!res.ok) {
+        toast.error("Failed to fetch all data");
+        setLoading(false);
+        return;
+      }
+
+      const allData = await res.json();
+      data = allData;
+    }
+
     const worksheet = XLSX.utils.json_to_sheet(data);
 
     const workbook = XLSX.utils.book_new();
@@ -635,7 +673,7 @@ const UsersPage = () => {
             </div>
           </Link>
         </div>
-        <div className="flex items-end justify-between pb-4">
+        <div className="flex items-end md:items-center justify-between pb-4">
           <div className="flex gap-2 flex-col justify-start md:flex-row">
             <Input
               className="w-60 text-sm"
@@ -738,7 +776,7 @@ const UsersPage = () => {
                           setOpenCreateUser(true);
                         }}
                       >
-                        <PlusCircleIcon size={60} className="!h-5 !w-5 " />
+                        <PlusCircleIcon size={25} className="" />
                       </div>
                     </TooltipTrigger>
                   </Tooltip>
@@ -747,12 +785,12 @@ const UsersPage = () => {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-        <div className="!h-[500px] !overflow-auto !scroll-y">
+        <div className="!h-[610px] !overflow-auto !scroll-y">
           <Table className="">
             <TableCaption>A list of users.</TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead className="flex items-center gap-3">
+                <TableHead className="flex items-center gap-3 w-25">
                   <Checkbox
                     checked={checkboxClicked?.length === data?.length}
                     onCheckedChange={(checked) => {
@@ -778,16 +816,19 @@ const UsersPage = () => {
                     >
                       <div className="font-2 text-xs">
                         <div className="pb-4">
-                          Are you sure want to delete the selected checkbox?
+                          {!selectAllDataset
+                            ? "Are you sure want to delete the selected checkbox?"
+                            : "This action will delete entire user, contact your IT if not sure"}
                         </div>
-                        {/* @ts-expect-error:no care  */}
-                        {checkboxClicked?.map((i: User, index) => {
-                          return (
-                            <div className="font-bold" key={index}>
-                              {i.name}
-                            </div>
-                          );
-                        })}
+                        {!selectAllDataset &&
+                          // @ts-expect-error:nocomment
+                          checkboxClicked?.map((i: User, index: number) => {
+                            return (
+                              <div className="font-bold" key={index}>
+                                {i.name}
+                              </div>
+                            );
+                          })}
                       </div>
                       <Button
                         variant="destructive"
@@ -800,8 +841,69 @@ const UsersPage = () => {
                       </Button>
                     </PopoverContent>
                   </Popover>
+                  <Tooltip>
+                    <TooltipTrigger
+                      asChild
+                      className="flex items-center justify-center align-center"
+                    >
+                      {checkboxClicked.length === data?.length &&
+                        (selectAllDataset ? (
+                          <Check
+                            onClick={() => {
+                              setSelectAllDataset(false);
+                              toast.info("All data not included");
+                            }}
+                            className="cursor-pointer hover:text-red-500"
+                          />
+                        ) : (
+                          <X
+                            onClick={() => {
+                              setSelectAllDataset(true);
+                              toast.info("All data is included");
+                            }}
+                            className="cursor-pointer hover:text-green-500"
+                          />
+                        ))}
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      {selectAllDataset
+                        ? "Toggle to only include data in this page "
+                        : "Toggle to include all data accross the pages"}
+                    </TooltipContent>
+                  </Tooltip>
                 </TableHead>
-                <TableHead className="font-bold">NAME</TableHead>
+                <TableHead className="font-bold w-58">
+                  <div className="flex justify-between">
+                    <>NAME</>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {orderName ? (
+                          <ArrowDownAZ
+                            className="cursor-pointer hover:text-green-500"
+                            onClick={() => setOrderName(false)}
+                            size={20}
+                          />
+                        ) : (
+                          <ArrowUpAZ
+                            className="cursor-pointer hover:text-green-500"
+                            onClick={() => setOrderName(true)}
+                            size={20}
+                          />
+                        )}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          {orderName
+                            ? "Sort Descendingly"
+                            : "Sort Sort Ascendingly"}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TableHead>
+                <TableHead className="hidden md:table-cell font-bold">
+                  EMAIL
+                </TableHead>
                 <TableHead className="hidden md:table-cell font-bold">
                   PHONE
                 </TableHead>
@@ -812,7 +914,7 @@ const UsersPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data ? (
+              {data?.length > 0 ? (
                 data?.map((user: User, index) => (
                   <TableRow
                     className="w-screen"
@@ -842,6 +944,9 @@ const UsersPage = () => {
                     </TableCell>
                     <TableCell className="md:w-[30%] max-w-[120px] truncate">
                       {user.name}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {user.email}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {user.phoneNumber}
@@ -929,14 +1034,22 @@ const UsersPage = () => {
           <PaginationContent className="flex justify-end">
             <PaginationItem>
               <PaginationPrevious
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                onClick={() => {
+                  setPage((p) => Math.max(p - 1, 1));
+                  setCheckboxClicked([]);
+                  setSelectAllDataset(false);
+                }}
                 className={page === 1 ? "pointer-events-none opacity-50" : ""}
               />
             </PaginationItem>
             <span className="flex items-center px-4">Page {page}</span>
             <PaginationItem>
               <PaginationNext
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => {
+                  setPage((p) => p + 1);
+                  setCheckboxClicked([]);
+                  setSelectAllDataset(false);
+                }}
                 className={
                   !data || data.length < 10
                     ? "pointer-events-none opacity-50"
@@ -1019,7 +1132,7 @@ const UsersPage = () => {
                       Role
                     </p>
                     <p className="text-sm text-slate-900 font-medium">
-                      {selectedUser.role}
+                      {selectedUser.role.toUpperCase()}
                     </p>
                   </div>
                 </div>

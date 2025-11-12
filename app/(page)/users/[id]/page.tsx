@@ -49,7 +49,7 @@ const IdPage = () => {
         <div className="flex flex-col gap-2 text-gray-800 dark:text-gray-100">
           <h2 className="text-2xl font-bold">{user.name}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {user.role}
+            {user.role.toUpperCase()}
           </p>
           <div>
             <span className="font-semibold">Email:</span> {user.email}
