@@ -117,7 +117,7 @@ const PermissionPage = () => {
   };
 
   return (
-    <div className="max-h-screen h-120 flex flex-col justify center p-4">
+    <div className="max-h-screen h-186 flex flex-col justify center p-4">
       <div className="pb-4 font-semibold tracking-widest flex items-center">
         DELETED USERS PAGE -
       </div>

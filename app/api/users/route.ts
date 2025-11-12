@@ -1,12 +1,39 @@
 // import { User } from "@/app/types";
 import dayjs from "dayjs";
-import { sortBy } from "lodash";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 
 export async function DELETE(request: Request) {
   try {
-    const user = await request.json();
+    const { user, selectAllDataset } = await request.json();
+
+    console.log("selectAllDataset", selectAllDataset);
+
+    if (selectAllDataset) {
+      const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      for (const u of data) {
+        const urlDel = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+        const resDel = await fetch(urlDel, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(u),
+        });
+        if (!resDel.ok) throw new Error("error posting to deletedUser");
+
+        const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${u.id}`;
+        const res = await fetch(url, { method: "DELETE" });
+        if (!res.ok) throw new Error("error deleting user");
+      }
+      return NextResponse.json({
+        message: "Successfully delete all",
+        status: 200,
+      });
+    }
 
     if (Array.isArray(user)) {
       for (const u of user) {
@@ -118,7 +145,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = searchParams.get("page") || "1";
   const search = searchParams.get("name");
-  const limit = searchParams.get("limit") || "14";
+  const limit = searchParams.get("limit") || "9999";
   const role = searchParams.get("role");
   const orderName = searchParams.get("orderName");
 
