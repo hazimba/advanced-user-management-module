@@ -8,7 +8,7 @@ import {
   Legend,
 } from "recharts";
 
-// @ts-expect-error:nocare
+// @ts-expect-error:notsure
 const Example = ({ data }) => {
   return (
     <LineChart

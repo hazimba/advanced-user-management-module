@@ -7,8 +7,6 @@ export async function DELETE(request: Request) {
   try {
     const { user, selectAllDataset } = await request.json();
 
-    console.log("selectAllDataset", selectAllDataset);
-
     if (selectAllDataset) {
       const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
       const res = await fetch(url);

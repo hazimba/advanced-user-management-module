@@ -43,11 +43,11 @@ const AnalyticsPage = () => {
   const [roleClick, setRoleClick] = useState<string>("guest");
   const [activeClick, setActiveClick] = useState<number>(0);
   const [filterDate, setFilterDate] = useState<{
-    fromDate?: string;
-    toDate?: string;
+    fromDate: string;
+    toDate: string;
   }>({
-    fromDate: "01-01-2020",
-    toDate: dayjs().format("DD-MM-YYYY"),
+    fromDate: "7-01-2025",
+    toDate: "10-01-2025",
   });
   const { data, isPending, error } = useQuery({
     queryKey: ["users", filterDate],
@@ -76,7 +76,7 @@ const AnalyticsPage = () => {
   const seggData = role
     ? Object.entries(role).map(([role, users]) => ({
         name: role,
-        // @ts-expect-error:nocare
+        // @ts-expect-error:notsure
         value: users?.length,
       }))
     : [];
@@ -84,7 +84,7 @@ const AnalyticsPage = () => {
   const seggActive = active
     ? Object.entries(active).map(([active, users]) => ({
         name: active,
-        // @ts-expect-error:nocare
+        // @ts-expect-error:notsure
         value: users?.length,
       }))
     : [];
@@ -93,7 +93,7 @@ const AnalyticsPage = () => {
     ? Object.entries(date)
         .map(([date, users]) => ({
           name: date,
-          // @ts-expect-error:nocare
+          // @ts-expect-error:notsure
           registration: users?.length,
         }))
         .sort((a, b) => {
@@ -103,12 +103,10 @@ const AnalyticsPage = () => {
           const dateA = new Date(yearA, monthA - 1, dayA);
           const dateB = new Date(yearB, monthB - 1, dayB);
 
-          // @ts-expect-error:nocare
+          // @ts-expect-error:notsure
           return dateA - dateB;
         })
     : [];
-
-  console.log("data", data);
 
   const onSubmit: SubmitHandler<FormSchema> = async (value: FormSchema) => {
     const toDate = dayjs(value?.dateRange.to).format("DD-MM-YYYY");

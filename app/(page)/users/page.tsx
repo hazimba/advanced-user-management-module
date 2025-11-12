@@ -97,7 +97,7 @@ import {
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
-import { boolean, z } from "zod";
+import { z } from "zod";
 
 enum Role {
   admin = "admin",
@@ -112,11 +112,11 @@ enum Active {
 
 const formSchema = z.object({
   uuid: z.any(),
-  name: z.string().min(2, "Min 2 char").max(50),
+  name: z.string().min(2, "Name is required"),
   avatar: z.string().optional(),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string().min(1, "Phone number is required"),
   role: z.enum(Role, "Role is required"),
-  bio: z.string().min(1, "Bio is required").max(500),
+  bio: z.string().max(500),
   id: z.string(),
   createdAt: z.any(),
   active: z.enum(Active, "Status is Required"),
@@ -524,7 +524,6 @@ const UsersPage = () => {
           selectAllDataset,
         }),
       });
-      console.log("res", res);
       if (!res.ok) throw new Error("Failed to delete user");
       return res.json();
     },
@@ -549,6 +548,7 @@ const UsersPage = () => {
       refetch();
     },
   });
+  if (error) return <p>Error loading data</p>;
 
   const handleDeleteUser = async (user: string[] | string) => {
     setPermDelete(true);
@@ -566,6 +566,7 @@ const UsersPage = () => {
             onClick={() => {
               setPermDelete(false);
               toast.info("Undo the deletion...");
+              setCheckboxClicked([]);
             }}
           >
             Undo
@@ -574,7 +575,7 @@ const UsersPage = () => {
           <></>
         )}
       </div>,
-      { duration: isArray ? 5000 : 1000 }
+      { duration: isArray ? 5000 : 50 }
     );
 
     try {
@@ -588,11 +589,10 @@ const UsersPage = () => {
         setLoading(false);
         return;
       }
-      setPermDelete(true);
 
       if (permDelete) {
         setEntity("Delete");
-        // @ts-expect-error: no care
+        // @ts-expect-error: notsure
         mutationDelete.mutateAsync(user);
       }
     } catch (error) {
@@ -604,12 +604,12 @@ const UsersPage = () => {
   };
 
   const handleCheckboxClick = (user: User, checked: boolean) => {
-    // @ts-expect-error:no care
+    // @ts-expect-error:notsure
     setCheckboxClicked((prev) => {
       if (checked) {
         return [...prev, user];
       } else {
-        // @ts-expect-error:no care
+        // @ts-expect-error:notsure
         return prev.filter((u: User) => u.id !== user.id);
       }
     });
@@ -620,6 +620,13 @@ const UsersPage = () => {
   };
 
   const handleDataRefresh = async (data: User[]) => {
+    if (checkboxClicked.length === 0) {
+      toast.error(
+        "No data selected to mutate data, click on checkbox required!"
+      );
+      setLoading(false);
+      return;
+    }
     setMutateData(true);
     await dataMutation.mutateAsync(data ? data : []);
   };
@@ -627,6 +634,13 @@ const UsersPage = () => {
   const handleExportCSV = async (dt: User[]) => {
     setLoading(true);
 
+    if (checkboxClicked.length === 0) {
+      toast.error(
+        "No data selected to export CSV, click on checkbox required!"
+      );
+      setLoading(false);
+      return;
+    }
     let data = dt;
     if (!dt) return toast.error("No data to export CSV");
     if (selectAllDataset) {
@@ -656,8 +670,6 @@ const UsersPage = () => {
     saveAs(blob, "data.csv");
     setLoading(false);
   };
-
-  if (error) return <p>Error loading data</p>;
 
   return (
     <div className="flex w-screen justify-center items-center">
@@ -851,7 +863,7 @@ const UsersPage = () => {
                           <Check
                             onClick={() => {
                               setSelectAllDataset(false);
-                              toast.info("All data not included");
+                              toast.info("All data is not included");
                             }}
                             className="cursor-pointer hover:text-red-500"
                           />
@@ -1003,7 +1015,7 @@ const UsersPage = () => {
                             variant="destructive"
                             disabled={loading}
                             onClick={() => {
-                              // @ts-expect-error:no care
+                              // @ts-expect-error:notsure
                               handleDeleteUser(user);
                             }}
                           >
@@ -1193,7 +1205,6 @@ const UsersPage = () => {
                 asChild
                 onClick={() => {
                   setOpenModal(false);
-                  // setSelectedUser(null);
                 }}
               >
                 <Button variant="outline">Close</Button>

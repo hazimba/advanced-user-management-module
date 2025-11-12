@@ -111,7 +111,7 @@ const PermissionPage = () => {
       toast.error("No data to recover");
     } else {
       setRecoverLoading(true);
-      // @ts-expect-error:nocare
+      // @ts-expect-error:notsure
       await mutation.mutateAsync(data);
     }
   };

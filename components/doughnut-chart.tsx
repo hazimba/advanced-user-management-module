@@ -109,7 +109,6 @@ export default function CustomActiveShapePieChart({
   setActiveClick: (arg0: number) => void;
   isAnimationActive?: boolean;
 }) {
-  console.log("activeClick", activeClick);
   return (
     <PieChart
       height={300}
@@ -117,7 +116,6 @@ export default function CustomActiveShapePieChart({
       onClick={(e) => {
         // @ts-expect-error:weirderror
         setActiveClick(e.activeLabel);
-        console.log(e);
       }}
       responsive
       margin={{
@@ -137,7 +135,7 @@ export default function CustomActiveShapePieChart({
         fill="#8884d8"
         dataKey="value"
         isAnimationActive={isAnimationActive}
-        onClick={(props) => console.log("props", props)}
+        // onClick={(props) => console.log("props", props)}
       />
       <Tooltip
         defaultIndex={activeClick}
