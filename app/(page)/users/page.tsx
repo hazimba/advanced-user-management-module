@@ -914,7 +914,7 @@ const UsersPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.length > 0 ? (
+              {data && data?.length > 0 ? (
                 data?.map((user: User, index) => (
                   <TableRow
                     className="w-screen"

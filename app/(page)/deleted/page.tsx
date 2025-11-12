@@ -157,7 +157,7 @@ const PermissionPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data?.length > 0 ? (
+          {data && data?.length > 0 ? (
             <>
               {data?.map((du: User[] | any, index: number) => (
                 <TableRow key={index}>
