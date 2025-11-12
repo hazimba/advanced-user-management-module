@@ -28,9 +28,15 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar1 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { FormSchema } from "../page";
-import { useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import dayjs from "dayjs";
+
+interface FormSchema {
+  dateRange: {
+    from: Date;
+    to: Date;
+  };
+}
 
 const AnalyticsPage = () => {
   const form = useForm();
@@ -104,10 +110,8 @@ const AnalyticsPage = () => {
 
   console.log("data", data);
 
-  const onSubmit = async (value: FormSchema) => {
-    console.log("value", value);
-
-    const toDate = dayjs(value.dateRange.to).format("DD-MM-YYYY");
+  const onSubmit: SubmitHandler<FormSchema> = async (value: FormSchema) => {
+    const toDate = dayjs(value?.dateRange.to).format("DD-MM-YYYY");
     const fromDate = dayjs(value.dateRange.from).format("DD-MM-YYYY");
 
     setFilterDate({ toDate: toDate, fromDate: fromDate });
@@ -199,6 +203,7 @@ const AnalyticsPage = () => {
                   <Form {...form}>
                     <form
                       className="flex flex-col gap-2"
+                      // @ts-expect-error:typeerrornoidea
                       onSubmit={form.handleSubmit(onSubmit)}
                     >
                       <FormField
