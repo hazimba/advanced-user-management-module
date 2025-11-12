@@ -74,7 +74,9 @@ import { useUserStore } from "@/hooks/user-store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowDownAZ,
   ArrowRight,
+  ArrowUpAZ,
   Briefcase,
   CalendarPlus,
   ChevronDown,
@@ -93,7 +95,7 @@ import {
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
-import { z } from "zod";
+import { boolean, z } from "zod";
 
 enum Role {
   admin = "admin",
@@ -458,12 +460,15 @@ const UsersPage = () => {
     },
   });
 
+  const [orderName, setOrderName] = useState<boolean | undefined>();
+
   const { data, error, refetch, isPending } = useQuery({
-    queryKey: ["users", page, debouncedSearch, selectInput],
+    queryKey: ["users", page, debouncedSearch, selectInput, orderName],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(page),
         limit: "50",
+        orderName: String(orderName),
       });
 
       if (debouncedSearch) params.append("name", debouncedSearch);
@@ -547,7 +552,8 @@ const UsersPage = () => {
             size="sm"
             className="h-6 px-2 py-1 text-xs"
             onClick={() => {
-              return setPermDelete(false);
+              setPermDelete(false);
+              toast.info("Undo the deletion...");
             }}
           >
             Undo
@@ -561,6 +567,7 @@ const UsersPage = () => {
 
     try {
       setLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       if (!permDeleteRef.current) {
         toast.success("Successfully not proceed to delete");
@@ -576,7 +583,10 @@ const UsersPage = () => {
         mutationDelete.mutateAsync(user);
       }
     } catch (error) {
+      toast.error("Something went wrong while deleting");
       console.error("error", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -801,7 +811,38 @@ const UsersPage = () => {
                     </PopoverContent>
                   </Popover>
                 </TableHead>
-                <TableHead className="font-bold">NAME</TableHead>
+                <TableHead className="font-bold w-58">
+                  <div className="flex justify-between">
+                    <>NAME</>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {orderName ? (
+                          <ArrowDownAZ
+                            className="cursor-pointer hover:text-green-500"
+                            onClick={() => setOrderName(false)}
+                            size={20}
+                          />
+                        ) : (
+                          <ArrowUpAZ
+                            className="cursor-pointer hover:text-green-500"
+                            onClick={() => setOrderName(true)}
+                            size={20}
+                          />
+                        )}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          {orderName
+                            ? "Sort Descendingly"
+                            : "Sort Sort Ascendingly"}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TableHead>
+                <TableHead className="hidden md:table-cell font-bold">
+                  EMAIL
+                </TableHead>
                 <TableHead className="hidden md:table-cell font-bold">
                   PHONE
                 </TableHead>
@@ -842,6 +883,9 @@ const UsersPage = () => {
                     </TableCell>
                     <TableCell className="md:w-[30%] max-w-[120px] truncate">
                       {user.name}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {user.email}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {user.phoneNumber}

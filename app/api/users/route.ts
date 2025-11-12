@@ -1,5 +1,6 @@
 // import { User } from "@/app/types";
 import dayjs from "dayjs";
+import { sortBy } from "lodash";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 
@@ -119,12 +120,18 @@ export async function GET(request: Request) {
   const search = searchParams.get("name");
   const limit = searchParams.get("limit") || "14";
   const role = searchParams.get("role");
+  const orderName = searchParams.get("orderName");
 
   const url = new URL(
     "https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users"
   );
 
-  const params: Record<string, string> = { page, limit };
+  const params: Record<string, string> = {
+    page,
+    limit,
+    sortBy: "name",
+    order: orderName === "true" ? "asc" : "desc",
+  };
   if (search) params.search = search;
   if (role) params.role = role;
   url.search = new URLSearchParams(params).toString();
