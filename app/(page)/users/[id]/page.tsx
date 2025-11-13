@@ -29,42 +29,44 @@ const IdPage = () => {
   const user = data;
 
   return (
-    <div className="w-screen min-h-screen px-4 py-10 flex flex-col gap-8">
-      <div className="flex items-center gap-3">
-        <MoveLeft
-          className="cursor-pointer hover:text-blue-500 transition-colors"
-          onClick={() => router.push("/users")}
-        />
-        <div className="text-lg font-semibold">User Update Successfully</div>
-      </div>
+    <div className="w-screen min-h-screen items-center px-4 py-10 flex flex-col gap-8">
+      <div className="flex flex-col max-w-7xl justify-center w-full">
+        <div className="flex items-center gap-3">
+          <MoveLeft
+            className="cursor-pointer hover:text-blue-500 transition-colors"
+            onClick={() => router.push("/users")}
+          />
+          <div className="text-lg font-semibold">User Update Successfully</div>
+        </div>
 
-      <div className="flex flex-col sm:flex-row items-start w-full sm:items-center gap-6 dark:bg-gray-800 p-6 rounded-2xl shadow-xl">
-        <Image
-          src={user.avatar}
-          alt={user.name}
-          width={200}
-          height={100}
-          className="rounded-lg"
-        />
-        <div className="flex flex-col gap-2 text-gray-800 dark:text-gray-100">
-          <h2 className="text-2xl font-bold">{user.name}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {user.role.toUpperCase()}
-          </p>
-          <div>
-            <span className="font-semibold">Email:</span> {user.email}
-          </div>
-          <div>
-            <span className="font-semibold">Phone:</span> {user.phoneNumber}
-          </div>
-          <div>
-            <span className="font-semibold">Status:</span> {user.active}
-          </div>
-          <div>
-            <span className="font-semibold">Bio:</span> {user.bio || "—"}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            Created at: {user.createdAt}
+        <div className="flex flex-col sm:flex-row items-start w-full sm:items-center gap-6 dark:bg-gray-800 p-6 rounded-2xl shadow-xl">
+          <Image
+            src={user.avatar}
+            alt={user.name}
+            width={200}
+            height={100}
+            className="rounded-lg"
+          />
+          <div className="flex flex-col gap-2 text-gray-800 dark:text-gray-100">
+            <h2 className="text-2xl font-bold">{user.name}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {user.role.toUpperCase()}
+            </p>
+            <div>
+              <span className="font-semibold">Email:</span> {user.email}
+            </div>
+            <div>
+              <span className="font-semibold">Phone:</span> {user.phoneNumber}
+            </div>
+            <div>
+              <span className="font-semibold">Status:</span> {user.active}
+            </div>
+            <div>
+              <span className="font-semibold">Bio:</span> {user.bio || "—"}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              Created at: {user.createdAt}
+            </div>
           </div>
         </div>
       </div>
