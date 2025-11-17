@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const to = searchParams.get("to");
     const from = searchParams.get("from");
 
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users`;
     const res = await fetch(url);
 
     if (!res.ok) throw new Error("Unable to fetch data");
