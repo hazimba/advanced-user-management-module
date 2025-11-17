@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser`;
     const res = await fetch(url);
 
     if (!res.ok) throw new Error("Error");
@@ -17,7 +17,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const user = await request.json();
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser`;
 
     const res = await fetch(url, {
       method: "POST",
@@ -41,11 +41,11 @@ export async function DELETE(request: Request) {
 
     if (Array.isArray(data)) {
       for (const dt of data) {
-        const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser/${dt.id}`;
+        const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser/${dt.id}`;
         const res = await fetch(url, { method: "DELETE" });
 
         if (res.ok) {
-          const postUrl = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
+          const postUrl = `https://691a9cf52d8d7855756f6c32.mockapi.io/users`;
           await fetch(postUrl, {
             method: "POST",
             headers: {
@@ -64,11 +64,11 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser/${id}`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser/${id}`;
     const res = await fetch(url, { method: "DELETE" });
 
     const resRec = await fetch(
-      `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`,
+      `https://691a9cf52d8d7855756f6c32.mockapi.io/users`,
       {
         method: "POST",
         headers: {

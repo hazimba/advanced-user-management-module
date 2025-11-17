@@ -6,7 +6,7 @@ export async function PATCH(request: Request) {
     const user = await request.json();
 
     const { id, ...updateData } = user;
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${id}`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${id}`;
 
     const res = await fetch(url, {
       method: "PATCH",
@@ -34,7 +34,7 @@ export async function DELETE(request: Request) {
     if (Array.isArray(user)) {
       await Promise.all(
         user.map(async (i: User) => {
-          const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${i.id}`;
+          const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${i.id}`;
 
           const res = await fetch(url, { method: "DELETE" });
           if (!res.ok) throw new Error("Failed to delete from mockapi");
@@ -43,7 +43,7 @@ export async function DELETE(request: Request) {
 
       await Promise.all(
         user.map(async (i: User) => {
-          const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+          const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser`;
 
           const res = await fetch(url, {
             method: "POST",
@@ -64,8 +64,8 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${user.id}`;
-    const urlDel = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${user.id}`;
+    const urlDel = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser`;
 
     const res = await fetch(url, { method: "DELETE" });
 

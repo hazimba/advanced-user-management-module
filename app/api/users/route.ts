@@ -8,12 +8,12 @@ export async function DELETE(request: Request) {
     const { user, selectAllDataset } = await request.json();
 
     if (selectAllDataset) {
-      const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
+      const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users`;
       const res = await fetch(url);
       const data = await res.json();
 
       for (const u of data) {
-        const urlDel = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+        const urlDel = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser`;
         const resDel = await fetch(urlDel, {
           method: "POST",
           headers: {
@@ -23,7 +23,7 @@ export async function DELETE(request: Request) {
         });
         if (!resDel.ok) throw new Error("error posting to deletedUser");
 
-        const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${u.id}`;
+        const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${u.id}`;
         const res = await fetch(url, { method: "DELETE" });
         if (!res.ok) throw new Error("error deleting user");
       }
@@ -35,7 +35,7 @@ export async function DELETE(request: Request) {
 
     if (Array.isArray(user)) {
       for (const u of user) {
-        const urlDel = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+        const urlDel = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser`;
         const resDel = await fetch(urlDel, {
           method: "POST",
           headers: {
@@ -45,7 +45,7 @@ export async function DELETE(request: Request) {
         });
         if (!resDel.ok) throw new Error("error posting to deletedUser");
 
-        const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${u.id}`;
+        const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${u.id}`;
         const res = await fetch(url, { method: "DELETE" });
         if (!res.ok) throw new Error("error deleting user");
       }
@@ -56,8 +56,8 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${user.id}`;
-    const urlDel = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${user.id}`;
+    const urlDel = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser`;
 
     const res = await fetch(url, { method: "DELETE" });
 
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
   try {
     const user = await request.json();
 
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users`;
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -118,7 +118,7 @@ export async function PATCH(request: Request) {
     const user = await request.json();
 
     const { id } = user;
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${id}`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${id}`;
 
     const res = await fetch(url, {
       method: "PATCH",
@@ -147,9 +147,7 @@ export async function GET(request: Request) {
   const role = searchParams.get("role");
   const orderName = searchParams.get("orderName");
 
-  const url = new URL(
-    "https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users"
-  );
+  const url = new URL("https://691a9cf52d8d7855756f6c32.mockapi.io/users");
 
   const params: Record<string, string> = {
     page,

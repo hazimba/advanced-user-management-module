@@ -47,7 +47,7 @@ const AnalyticsPage = () => {
     toDate: string;
   }>({
     fromDate: "7-01-2025",
-    toDate: "10-01-2025",
+    toDate: "12-12-2025",
   });
   const { data, isPending, error } = useQuery({
     queryKey: ["users", filterDate],

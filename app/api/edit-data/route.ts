@@ -10,7 +10,7 @@ export async function PATCH(request: Request) {
 
   try {
     if (selectAllDataset) {
-      const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users`;
+      const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users`;
 
       const res = await fetch(url);
       const json = await res.json();
@@ -19,7 +19,7 @@ export async function PATCH(request: Request) {
         const randomRole = roles[Math.floor(Math.random() * roles.length)];
         const randomActive = active[Math.floor(Math.random() * active.length)];
         const res = await fetch(
-          `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${js.id}`,
+          `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${js.id}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -41,7 +41,7 @@ export async function PATCH(request: Request) {
     for (const dt of data) {
       const randomRole = roles[Math.floor(Math.random() * roles.length)];
       const randomActive = active[Math.floor(Math.random() * active.length)];
-      const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${dt.id}`;
+      const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${dt.id}`;
       const res = await fetch(url, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

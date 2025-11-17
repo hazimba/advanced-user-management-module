@@ -12,14 +12,14 @@ export async function DELETE(request: Request) {
 
     if (Array.isArray(user)) {
       for (const u of user) {
-        const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser/${u.id}`;
+        const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser/${u.id}`;
         const res = await fetch(url, { method: "DELETE" });
 
         if (!res.ok) throw new Error("Unable to delete user permenantly");
       }
       return NextResponse.json({ message: "Delete deleted" }, { status: 200 });
     }
-    const url = `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/deletedUser/${user.id}`;
+    const url = `https://691a9cf52d8d7855756f6c32.mockapi.io/deletedUser/${user.id}`;
     const res = await fetch(url, { method: "DELETE" });
 
     if (!res.ok) throw new Error("Cant delete");

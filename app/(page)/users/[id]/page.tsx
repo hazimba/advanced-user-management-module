@@ -14,7 +14,7 @@ const IdPage = () => {
     queryKey: ["user", id],
     queryFn: async () => {
       const res = await fetch(
-        `https://690c9788a6d92d83e84e61f2.mockapi.io/api/v1/users/${id}`
+        `https://691a9cf52d8d7855756f6c32.mockapi.io/users/${id}`
       );
       if (!res.ok) throw new Error("Failed to fetch user");
       return res.json();
